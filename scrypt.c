@@ -29,7 +29,7 @@
 
 #include "cpuminer-config.h"
 #include "miner.h"
-
+#include "salsa_20_sidm.c"
 #include <stdlib.h>
 #include <string.h>
 #include <inttypes.h>
@@ -514,9 +514,11 @@ unsigned char *scrypt_buffer_alloc()
 static void scrypt_1024_1_1_256(const uint32_t *input, uint32_t *output,
 	uint32_t *midstate, unsigned char *scratchpad)
 {
-	uint32_t tstate[8], ostate[8];
-	uint32_t X[32];
+	uint32_t tstate[8] __attribute__((aligned(32)));
+	uint32_t ostate[8]__attribute__((aligned(32)));
+	uint32_t X[32] __attribute__((aligned(32)));
 	uint32_t *V;
+	uint32_t i;
 	
 	V = (uint32_t *)(((uintptr_t)(scratchpad) + 63) & ~ (uintptr_t)(63));
 
@@ -524,7 +526,7 @@ static void scrypt_1024_1_1_256(const uint32_t *input, uint32_t *output,
 	HMAC_SHA256_80_init(input, tstate, ostate);
 	PBKDF2_SHA256_80_128(tstate, ostate, input, X);
 
-	scrypt_core(X, V);
+	scrypt_core_sidm((__m128i*)X /*, V*/);
 
 	PBKDF2_SHA256_128_32(tstate, ostate, X, output);
 }
@@ -710,6 +712,7 @@ int scanhash_scrypt(int thr_id, uint32_t *pdata,
 	if (sha256_use_4way())
 		throughput *= 4;
 #endif
+	throughput = 1;
 	
 	for (i = 0; i < throughput; i++)
 		memcpy(data + i * 20, pdata, 80);
