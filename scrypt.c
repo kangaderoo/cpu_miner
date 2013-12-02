@@ -380,7 +380,6 @@ static inline void PBKDF2_SHA256_128_32_8way(uint32_t *tstate,
 
 
 #if defined(__x86_64__)
-
 #define SCRYPT_MAX_WAYS 12
 #define HAVE_SCRYPT_3WAY 1
 int scrypt_best_throughput();
@@ -435,31 +434,26 @@ static inline void xor_salsa8(uint32_t B[16], const uint32_t Bx[16])
 	x15 = (B[15] ^= Bx[15]);
 	for (i = 0; i < 8; i += 2) {
 #define R(a, b) (((a) << (b)) | ((a) >> (32 - (b))))
-		/* Operate on columns. */
-		x04 ^= R(x00+x12, 7);	x09 ^= R(x05+x01, 7);
-		x14 ^= R(x10+x06, 7);	x03 ^= R(x15+x11, 7);
-		
-		x08 ^= R(x04+x00, 9);	x13 ^= R(x09+x05, 9);
-		x02 ^= R(x14+x10, 9);	x07 ^= R(x03+x15, 9);
-		
-		x12 ^= R(x08+x04,13);	x01 ^= R(x13+x09,13);
-		x06 ^= R(x02+x14,13);	x11 ^= R(x07+x03,13);
-		
-		x00 ^= R(x12+x08,18);	x05 ^= R(x01+x13,18);
-		x10 ^= R(x06+x02,18);	x15 ^= R(x11+x07,18);
-		
-		/* Operate on rows. */
-		x01 ^= R(x00+x03, 7);	x06 ^= R(x05+x04, 7);
-		x11 ^= R(x10+x09, 7);	x12 ^= R(x15+x14, 7);
-		
-		x02 ^= R(x01+x00, 9);	x07 ^= R(x06+x05, 9);
-		x08 ^= R(x11+x10, 9);	x13 ^= R(x12+x15, 9);
-		
-		x03 ^= R(x02+x01,13);	x04 ^= R(x07+x06,13);
-		x09 ^= R(x08+x11,13);	x14 ^= R(x13+x12,13);
-		
-		x00 ^= R(x03+x02,18);	x05 ^= R(x04+x07,18);
-		x10 ^= R(x09+x08,18);	x15 ^= R(x14+x13,18);
+//		/* Operate on columns. */
+		/* 0,4,8,12        *//* 1,5,9,13           *//* 2,6,10,14          *//* 3,7,11,15 */
+		x04 ^= R(x00+x12, 7);	x09 ^= R(x05+x01, 7);	x14 ^= R(x10+x06, 7);	x03 ^= R(x15+x11, 7);
+
+		x08 ^= R(x04+x00, 9);	x13 ^= R(x09+x05, 9);	x02 ^= R(x14+x10, 9);	x07 ^= R(x03+x15, 9);
+
+		x12 ^= R(x08+x04,13);	x01 ^= R(x13+x09,13);	x06 ^= R(x02+x14,13);	x11 ^= R(x07+x03,13);
+
+		x00 ^= R(x12+x08,18);	x05 ^= R(x01+x13,18);	x10 ^= R(x06+x02,18);	x15 ^= R(x11+x07,18);
+//		
+//		/* Operate on rows. */
+//		/* 1,2,3,0         *//* 6,7,4,5            *//* 11,8,9,10          *//* 12,13,14,15 */
+		x01 ^= R(x00+x03, 7);	x06 ^= R(x05+x04, 7);	x11 ^= R(x10+x09, 7);	x12 ^= R(x15+x14, 7);
+//		
+		x02 ^= R(x01+x00, 9);	x07 ^= R(x06+x05, 9);	x08 ^= R(x11+x10, 9);	x13 ^= R(x12+x15, 9);
+//		
+		x03 ^= R(x02+x01,13);	x04 ^= R(x07+x06,13);	x09 ^= R(x08+x11,13);	x14 ^= R(x13+x12,13);
+//		
+		x00 ^= R(x03+x02,18);	x05 ^= R(x04+x07,18);	x10 ^= R(x09+x08,18);	x15 ^= R(x14+x13,18);
+
 #undef R
 	}
 	B[ 0] += x00;
@@ -526,8 +520,24 @@ static void scrypt_1024_1_1_256(const uint32_t *input, uint32_t *output,
 	memcpy(tstate, midstate, 32);
 	HMAC_SHA256_80_init(input, tstate, ostate);
 	PBKDF2_SHA256_80_128(tstate, ostate, input, X);
+#if 0
+	for (i=0;i<32;i++)
+		X[i]=i;
+	scrypt_core_sidm((__m128i *)X /*, V*/);
 
-	scrypt_core_sidm((__m128i*)X /*, V*/);
+	//	scrypt_core_org(X, V);
+
+	applog(LOG_INFO, "return:");
+	applog(LOG_INFO, "row1: %x %x %x %x", X[0], X[1], X[2], X[3]);
+	applog(LOG_INFO, "row1: %x %x %x %x", X[4], X[7], X[6], X[7]);
+	applog(LOG_INFO, "row1: %x %x %x %x", X[8], X[9], X[10], X[11]);
+	applog(LOG_INFO, "row1: %x %x %x %x", X[12], X[13], X[14], X[15]);
+
+#else
+	scrypt_core(X, V);
+#endif
+
+
 
 	PBKDF2_SHA256_128_32(tstate, ostate, X, output);
 }
@@ -728,8 +738,10 @@ int scanhash_scrypt(int thr_id, uint32_t *pdata,
 	if (sha256_use_4way())
 		throughput *= 4;
 #endif
+
+#if 0
 	throughput = 1;
-	
+#endif
 	for (i = 0; i < throughput; i++)
 		memcpy(data + i * 20, pdata, 80);
 	
