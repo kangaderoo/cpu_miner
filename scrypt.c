@@ -33,6 +33,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <inttypes.h>
+#include "script_lut.h"
 
 static const uint32_t keypad[12] = {
 	0x80000000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x00000280
@@ -609,11 +610,16 @@ static void scrypt_1024_1_1_256_12way(const uint32_t *input,
 	int i, j, k;
 	
 	V = (uint32_t *)(((uintptr_t)(scratchpad) + 63) & ~ (uintptr_t)(63));
-
+#if 1
 	for (j = 0; j < 3; j++)
 		for (i = 0; i < 20; i++)
 			for (k = 0; k < 4; k++)
 				W[128 * j + 4 * i + k] = input[80 * j + k * 20 + i];
+#else
+	for (j=0;j<3;j++)
+		for (i=0;i<80;i++)
+			W[128* j + i] = input[80*j + Input2W_LUT[i]];
+#endif
 	for (j = 0; j < 3; j++)
 		for (i = 0; i < 8; i++)
 			for (k = 0; k < 4; k++)
@@ -624,18 +630,28 @@ static void scrypt_1024_1_1_256_12way(const uint32_t *input,
 	PBKDF2_SHA256_80_128_4way(tstate +  0, ostate +  0, W +   0, W +   0);
 	PBKDF2_SHA256_80_128_4way(tstate + 32, ostate + 32, W + 128, W + 128);
 	PBKDF2_SHA256_80_128_4way(tstate + 64, ostate + 64, W + 256, W + 256);
+#if 1
 	for (j = 0; j < 3; j++)
 		for (i = 0; i < 32; i++)
 			for (k = 0; k < 4; k++)
 				X[128 * j + k * 32 + i] = W[128 * j + 4 * i + k];
+#else
+	for (i =0;i<386;i++)
+		X[i] = W[W_X_LUT[i]];
+#endif
 	scrypt_core_3way(X + 0 * 96, V);
 	scrypt_core_3way(X + 1 * 96, V);
 	scrypt_core_3way(X + 2 * 96, V);
 	scrypt_core_3way(X + 3 * 96, V);
+#if 1
 	for (j = 0; j < 3; j++)
 		for (i = 0; i < 32; i++)
 			for (k = 0; k < 4; k++)
 				W[128 * j + 4 * i + k] = X[128 * j + k * 32 + i];
+#else
+	for (i =0;i<386;i++)
+		W[i] = X[X_W_LUT[i]];
+#endif
 	PBKDF2_SHA256_128_32_4way(tstate +  0, ostate +  0, W +   0, W +   0);
 	PBKDF2_SHA256_128_32_4way(tstate + 32, ostate + 32, W + 128, W + 128);
 	PBKDF2_SHA256_128_32_4way(tstate + 64, ostate + 64, W + 256, W + 256);
@@ -731,7 +747,7 @@ int scanhash_scrypt(int thr_id, uint32_t *pdata,
 #endif
 #if defined(HAVE_SCRYPT_3WAY) && defined(HAVE_SHA256_4WAY)
 		if (throughput == 12)
-			scrypt_1024_1_1_256_12way(data, hash, midstate, scratchbuf);
+		    scrypt_1024_1_1_256_12way(data, hash, midstate, scratchbuf);
 		else
 #endif
 #if defined(HAVE_SCRYPT_6WAY)
