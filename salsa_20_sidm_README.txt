@@ -2,7 +2,7 @@
 
 	This repositry shows the way the SALSA20_8 double round can be implemented using AVX enabled processors 
 	The compiled output will be close to the Assembly files as have been provided in the original repository 
-	from "https://github.com/pooler/cpuminer" The single way mining speed of this code is equal to the 3way 
+	from "https://github.com/pooler/cpuminer" The single way mining speed of this code is still slower then the 3way 
 	variant as the original repository supplies in Assembly.
 
 	THIS REPOSITORY SHOULD NOT BE USED IF YOU AIM IS JUST MINING. 
