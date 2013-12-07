@@ -29,7 +29,7 @@
 
 #include "cpuminer-config.h"
 #include "miner.h"
-#include "salsa_20_sidm.c"
+#include "salsa_20_sidm_bck.c"
 #include <stdlib.h>
 #include <string.h>
 #include <inttypes.h>
@@ -524,7 +524,7 @@ static void scrypt_1024_1_1_256(const uint32_t *input, uint32_t *output,
 //	for (i=0;i<32;i++)
 //		X[i]=i+0xfc4e9831;
 	//X[0] = 1;
-	scrypt_core_sidm((__m128i *)X /*, V*/);
+	scrypt_core_sidm(X , V);
 
 	//scrypt_core_org(X, V);
 
