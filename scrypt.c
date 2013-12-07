@@ -520,18 +520,23 @@ static void scrypt_1024_1_1_256(const uint32_t *input, uint32_t *output,
 	memcpy(tstate, midstate, 32);
 	HMAC_SHA256_80_init(input, tstate, ostate);
 	PBKDF2_SHA256_80_128(tstate, ostate, input, X);
-#if 0
-	for (i=0;i<32;i++)
-		X[i]=i;
+#if 1
+//	for (i=0;i<32;i++)
+//		X[i]=i+0xfc4e9831;
+	//X[0] = 1;
 	scrypt_core_sidm((__m128i *)X /*, V*/);
 
-	//	scrypt_core_org(X, V);
+	//scrypt_core_org(X, V);
 
-	applog(LOG_INFO, "return:");
-	applog(LOG_INFO, "row1: %x %x %x %x", X[0], X[1], X[2], X[3]);
-	applog(LOG_INFO, "row1: %x %x %x %x", X[4], X[7], X[6], X[7]);
-	applog(LOG_INFO, "row1: %x %x %x %x", X[8], X[9], X[10], X[11]);
-	applog(LOG_INFO, "row1: %x %x %x %x", X[12], X[13], X[14], X[15]);
+//	applog(LOG_INFO, "return:");
+//	applog(LOG_INFO, "row1: %x %x %x %x", X[0], X[1], X[2], X[3]);
+//	applog(LOG_INFO, "row2: %x %x %x %x", X[4], X[5], X[6], X[7]);
+//	applog(LOG_INFO, "row3: %x %x %x %x", X[8], X[9], X[10], X[11]);
+//	applog(LOG_INFO, "row4: %x %x %x %x", X[12], X[13], X[14], X[15]);
+//	applog(LOG_INFO, "row1: %x %x %x %x", X[16], X[17], X[18], X[19]);
+//	applog(LOG_INFO, "row2: %x %x %x %x", X[20], X[21], X[22], X[23]);
+//	applog(LOG_INFO, "row3: %x %x %x %x", X[24], X[25], X[26], X[27]);
+//	applog(LOG_INFO, "row4: %x %x %x %x", X[28], X[29], X[30], X[31]);
 
 #else
 	scrypt_core(X, V);
