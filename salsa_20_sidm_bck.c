@@ -33,8 +33,8 @@
 
 #if defined(__x86_64__)
 
-static inline void xor_salsa_sidm(__m128i *calc_18, __m128i  *calc_13, __m128i  *calc_9, __m128i *calc_7,
-  								  __m128i *calc_1,  __m128i  *calc_4, __m128i  *calc_3, __m128i *calc_2)
+static inline void xor_salsa_sidm(__m128i *calc_18, __m128i *calc_13, __m128i *calc_9, __m128i *calc_7,
+ 								  __m128i *calc_1, __m128i *calc_4, __m128i *calc_3, __m128i *calc_2)
 {
 	int i;
 	__m128i _calc;
@@ -185,12 +185,11 @@ static inline void scrypt_core_sidm(uint32_t *X , uint32_t *V)
 		scratch[i * 8 + 6] = *calc_31;
 		scratch[i * 8 + 7] = *calc_41;
 
-		xor_salsa_sidm( calc_1, calc_2, calc_3, calc_4, calc_11, calc_21, calc_31, calc_41);
-		xor_salsa_sidm(calc_11,calc_21,calc_31,calc_41,  calc_1,  calc_2,  calc_3,  calc_4);
+		xor_salsa_sidm( calc_1, calc_2, calc_3, calc_4,calc_11,calc_21,calc_31,calc_41);
+		xor_salsa_sidm(calc_11,calc_21,calc_31,calc_41, calc_1, calc_2, calc_3, calc_4);
 	}
 	for (i = 0; i < 1024; i++) {
-
-   	    j = 8 * (_mm_extract_epi16(*calc_11,0x00) & 1023);
+		j = 8 * (_mm_extract_epi16(*calc_11,0x00) & 1023);
 
 		*calc_1 = _mm_xor_si128(*calc_1, scratch[j]);
 		*calc_2 = _mm_xor_si128(*calc_2, scratch[j+1]);
@@ -201,8 +200,8 @@ static inline void scrypt_core_sidm(uint32_t *X , uint32_t *V)
 		*calc_31 = _mm_xor_si128(*calc_31, scratch[j+6]);
 		*calc_41 = _mm_xor_si128(*calc_41, scratch[j+7]);
 
-		xor_salsa_sidm(calc_1,calc_2,calc_3,calc_4,calc_11,calc_21,calc_31,calc_41);
-		xor_salsa_sidm(calc_11,calc_21,calc_31,calc_41,calc_1,calc_2,calc_3,calc_4);
+		xor_salsa_sidm( calc_1, calc_2, calc_3, calc_4,calc_11,calc_21,calc_31,calc_41);
+		xor_salsa_sidm(calc_11,calc_21,calc_31,calc_41, calc_1, calc_2, calc_3, calc_4);
 	}
 
 	_calc5 =_mm_blend_epi16(*calc_11, *calc_31, 0xf0);

@@ -33,8 +33,8 @@
 
 #if defined(__x86_64__)
 
-static inline void xor_salsa_sidm(__m128i *calc_18, __m128i  *calc_13, __m128i  *calc_9, __m128i *calc_7,
- 								  __m128i *calc_1,  __m128i   *calc_4, __m128i  *calc_3, __m128i *calc_2)
+static inline void xor_salsa_sidm(__m128i *calc_18, __m128i *calc_13, __m128i *calc_9, __m128i *calc_7,
+ 								  __m128i *calc_1, __m128i *calc_4, __m128i *calc_3, __m128i *calc_2)
 {
 	int i;
 	__m128i _calc;
@@ -48,10 +48,6 @@ static inline void xor_salsa_sidm(__m128i *calc_18, __m128i  *calc_13, __m128i  
 	*calc_7 = _mm_xor_si128(*calc_7, *calc_2);
 	*calc_9 = _mm_xor_si128(*calc_9, *calc_3);
 	*calc_13 = _mm_xor_si128(*calc_13, *calc_4);
-//	row1 = *calc_18;
-//	row2 = *calc_7;
-//	row3 = *calc_9;
-//	row4 = *calc_13;
 
 	for (i = 0; i < 8; i += 2) {
 		/* first row */
@@ -132,7 +128,7 @@ static inline void xor_salsa_sidm(__m128i *calc_18, __m128i  *calc_13, __m128i  
 static inline void scrypt_core_sidm(__m128i *X /*, uint32_t *V*/)
 {
 	uint32_t i, j;
-	static __m128i scratch[1025 * 8];
+	__m128i scratch[1024 * 8];
 
 	__m128i *calc_1 = (__m128i*) &X[0];
 	__m128i *calc_2 = (__m128i*) &X[1];
@@ -178,17 +174,17 @@ static inline void scrypt_core_sidm(__m128i *X /*, uint32_t *V*/)
 		scratch[i * 8 + 6] = *calc_31;
 		scratch[i * 8 + 7] = *calc_41;
 
-		xor_salsa_sidm( calc_1, calc_2, calc_3, calc_4, calc_11, calc_21, calc_31, calc_41);
-		xor_salsa_sidm(calc_11,calc_21,calc_31,calc_41,  calc_1,  calc_2,  calc_3,  calc_4);
+		xor_salsa_sidm( calc_1, calc_2, calc_3, calc_4,calc_11,calc_21,calc_31,calc_41);
+		xor_salsa_sidm(calc_11,calc_21,calc_31,calc_41, calc_1, calc_2, calc_3, calc_4);
 	}
 
 	for (i = 0; i < 1024; i++) {
-		j = 8 * (_mm_extract_epi16(*calc_11,0x0) & 1023);
+		j = 8 * (_mm_extract_epi16(*calc_11,0x00) & 1023);
 
-		*calc_1  = _mm_xor_si128(*calc_1,  scratch[j+0]);
-		*calc_2  = _mm_xor_si128(*calc_2,  scratch[j+1]);
-		*calc_3  = _mm_xor_si128(*calc_3,  scratch[j+2]);
-		*calc_4  = _mm_xor_si128(*calc_4,  scratch[j+3]);
+		*calc_1 = _mm_xor_si128(*calc_1, scratch[j]);
+		*calc_2 = _mm_xor_si128(*calc_2, scratch[j+1]);
+		*calc_3 = _mm_xor_si128(*calc_3, scratch[j+2]);
+		*calc_4 = _mm_xor_si128(*calc_4, scratch[j+3]);
 		*calc_11 = _mm_xor_si128(*calc_11, scratch[j+4]);
 		*calc_21 = _mm_xor_si128(*calc_21, scratch[j+5]);
 		*calc_31 = _mm_xor_si128(*calc_31, scratch[j+6]);
