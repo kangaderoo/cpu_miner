@@ -744,7 +744,7 @@ int scanhash_scrypt(int thr_id, uint32_t *pdata,
 		throughput *= 4;
 #endif
 
-#if 0
+#if 1
 	throughput = 1;
 #endif
 	for (i = 0; i < throughput; i++)
