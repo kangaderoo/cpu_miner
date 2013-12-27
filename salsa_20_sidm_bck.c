@@ -125,19 +125,20 @@ static inline void xor_salsa_sidm(__m128i *calc_18, __m128i *calc_13, __m128i *c
 	*calc_13 = _mm_add_epi32(*calc_13, row4);
 }
 
-static inline void scrypt_core_sidm(uint32_t *X , uint32_t *V)
+static inline void scrypt_core_sidm(uint32_t *X /*, uint32_t *V*/)
 {
 	uint32_t i, j, k;
 
-	uint32_t row1[4] __attribute__((aligned(32))) = {X[0], X[1], X[2], X[3]};
-	uint32_t row2[4] __attribute__((aligned(32))) = {X[4], X[5], X[6], X[7]};
-	uint32_t row3[4] __attribute__((aligned(32))) = {X[8], X[9], X[10], X[11]};
-	uint32_t row4[4] __attribute__((aligned(32))) = {X[12], X[13], X[14], X[15]};
+	__m128i *SourcePtr = (__m128i*) X;
+	uint32_t row1[4] __attribute__((aligned(16))); // = {X[0], X[1], X[2], X[3]};
+	uint32_t row2[4] __attribute__((aligned(16))); // = {X[4], X[5], X[6], X[7]};
+	uint32_t row3[4] __attribute__((aligned(16))); // = {X[8], X[9], X[10], X[11]};
+	uint32_t row4[4] __attribute__((aligned(16))); // = {X[12], X[13], X[14], X[15]};
 
-	uint32_t row11[4] __attribute__((aligned(32))) = {X[16], X[17], X[18], X[19]};
-	uint32_t row21[4] __attribute__((aligned(32))) = {X[20], X[21], X[22], X[23]};
-	uint32_t row31[4] __attribute__((aligned(32))) = {X[24], X[25], X[26], X[27]};
-	uint32_t row41[4] __attribute__((aligned(32))) = {X[28], X[29], X[30], X[31]};
+	uint32_t row11[4] __attribute__((aligned(16))); // = {X[16], X[17], X[18], X[19]};
+	uint32_t row21[4] __attribute__((aligned(16))); // = {X[20], X[21], X[22], X[23]};
+	uint32_t row31[4] __attribute__((aligned(16))); // = {X[24], X[25], X[26], X[27]};
+	uint32_t row41[4] __attribute__((aligned(16))); // = {X[28], X[29], X[30], X[31]};
 
 	__m128i scratch[1024 * 8];
 
@@ -146,15 +147,27 @@ static inline void scrypt_core_sidm(uint32_t *X , uint32_t *V)
 	__m128i *calc_3 = (__m128i*) row3;
 	__m128i *calc_4 = (__m128i*) row4;
 
+	*calc_1 = SourcePtr[0]; //(__m128i*) row1;
+	*calc_2 = SourcePtr[1]; //(__m128i*) row1;
+	*calc_3 = SourcePtr[2]; //(__m128i*) row1;
+	*calc_4 = SourcePtr[3]; //(__m128i*) row1;
+
 	__m128i *calc_11 = (__m128i*) row11;
 	__m128i *calc_21 = (__m128i*) row21;
 	__m128i *calc_31 = (__m128i*) row31;
 	__m128i *calc_41 = (__m128i*) row41;
 
+	*calc_11 = SourcePtr[4]; //(__m128i*) row1;
+	*calc_21 = SourcePtr[5]; //(__m128i*) row1;
+	*calc_31 = SourcePtr[6]; //(__m128i*) row1;
+	*calc_41 = SourcePtr[7]; //(__m128i*) row1;
+
 	__m128i _calc5;
 	__m128i _calc6;
 	__m128i _calc7;
 	__m128i _calc8;
+
+    // __m128i *scratchPrt = (__m128i*) scratch;
 
 	/* transpose the data from *X */
 	_calc5 =_mm_blend_epi16(*calc_11, *calc_31, 0xf0);
@@ -185,13 +198,16 @@ static inline void scrypt_core_sidm(uint32_t *X , uint32_t *V)
 		scratch[i * 8 + 6] = *calc_31;
 		scratch[i * 8 + 7] = *calc_41;
 
-		xor_salsa_sidm( calc_1, calc_2, calc_3, calc_4,calc_11,calc_21,calc_31,calc_41);
-		xor_salsa_sidm(calc_11,calc_21,calc_31,calc_41, calc_1, calc_2, calc_3, calc_4);
+		xor_salsa_sidm(calc_1, calc_2, calc_3, calc_4,calc_11,calc_21,calc_31,calc_41);
+		xor_salsa_sidm(calc_11,calc_21,calc_31,calc_41,calc_1, calc_2, calc_3, calc_4);
 	}
 	for (i = 0; i < 1024; i++) {
+//		__m128i *scratchprt = scratch[ 8 * (_mm_extract_epi16(*calc_11,0x00) & 1023)];
 		j = 8 * (_mm_extract_epi16(*calc_11,0x00) & 1023);
-
-		*calc_1 = _mm_xor_si128(*calc_1, scratch[j]);
+//		j = 8 * (row11[0] & 1023);
+//      this section still compiles to too much instructions (about 14 in excess)
+//      called 1024 times......
+		*calc_1 = _mm_xor_si128(*calc_1, scratch[j+0]);
 		*calc_2 = _mm_xor_si128(*calc_2, scratch[j+1]);
 		*calc_3 = _mm_xor_si128(*calc_3, scratch[j+2]);
 		*calc_4 = _mm_xor_si128(*calc_4, scratch[j+3]);
@@ -200,8 +216,8 @@ static inline void scrypt_core_sidm(uint32_t *X , uint32_t *V)
 		*calc_31 = _mm_xor_si128(*calc_31, scratch[j+6]);
 		*calc_41 = _mm_xor_si128(*calc_41, scratch[j+7]);
 
-		xor_salsa_sidm( calc_1, calc_2, calc_3, calc_4,calc_11,calc_21,calc_31,calc_41);
-		xor_salsa_sidm(calc_11,calc_21,calc_31,calc_41, calc_1, calc_2, calc_3, calc_4);
+		xor_salsa_sidm(calc_1, calc_2, calc_3, calc_4,calc_11,calc_21,calc_31,calc_41);
+		xor_salsa_sidm(calc_11,calc_21,calc_31,calc_41,calc_1, calc_2, calc_3, calc_4);
 	}
 
 	_calc5 =_mm_blend_epi16(*calc_11, *calc_31, 0xf0);
@@ -222,100 +238,565 @@ static inline void scrypt_core_sidm(uint32_t *X , uint32_t *V)
 	*calc_3 = _mm_blend_epi16(_calc7, _calc6, 0xcc);
 	*calc_4 = _mm_blend_epi16(_calc8, _calc7, 0xcc);
 
-	X[0] =  row1[0];  X[1]= row1[1];  X[2]= row1[2];  X[3]= row1[3];
-	X[4] =  row2[0];  X[5]= row2[1];  X[6]= row2[2];  X[7]= row2[3];
-	X[8] =  row3[0];  X[9]= row3[1]; X[10]= row3[2]; X[11]= row3[3];
-	X[12] = row4[0]; X[13]= row4[1]; X[14]= row4[2]; X[15]= row4[3];
+    SourcePtr[0] = *calc_1; //(__m128i*) row1;
+    SourcePtr[1] = *calc_2; //(__m128i*) row1;
+    SourcePtr[2] = *calc_3; //(__m128i*) row1;
+    SourcePtr[3] = *calc_4; //(__m128i*) row1;
 
-	X[16] = row11[0]; X[17]= row11[1]; X[18]= row11[2]; X[19]= row11[3];
-	X[20] = row21[0]; X[21]= row21[1]; X[22]= row21[2]; X[23]= row21[3];
-	X[24] = row31[0]; X[25]= row31[1]; X[26]= row31[2]; X[27]= row31[3];
-	X[28] = row41[0]; X[29]= row41[1]; X[30]= row41[2]; X[31]= row41[3];
+    SourcePtr[4] = *calc_11; //(__m128i*) row1;
+    SourcePtr[5] = *calc_21; //(__m128i*) row1;
+    SourcePtr[6] = *calc_31; //(__m128i*) row1;
+    SourcePtr[7] = *calc_41; //(__m128i*) row1;
+
+
+//	X[0] =  row1[0];  X[1]= row1[1];  X[2]= row1[2];  X[3]= row1[3];
+//	X[4] =  row2[0];  X[5]= row2[1];  X[6]= row2[2];  X[7]= row2[3];
+//	X[8] =  row3[0];  X[9]= row3[1]; X[10]= row3[2]; X[11]= row3[3];
+//	X[12] = row4[0]; X[13]= row4[1]; X[14]= row4[2]; X[15]= row4[3];
+
+//	X[16] = row11[0]; X[17]= row11[1]; X[18]= row11[2]; X[19]= row11[3];
+//	X[20] = row21[0]; X[21]= row21[1]; X[22]= row21[2]; X[23]= row21[3];
+//	X[24] = row31[0]; X[25]= row31[1]; X[26]= row31[2]; X[27]= row31[3];
+//	X[28] = row41[0]; X[29]= row41[1]; X[30]= row41[2]; X[31]= row41[3];
 
 }
 
 
-#endif
 
-static inline void xor_salsa8_org(uint32_t B[16], const uint32_t Bx[16])
+//#define S0(x)           (ROTR(x, 2) ^ ROTR(x, 13) ^ ROTR(x, 22))
+__m128i funct_S0(const __m128i *x)
 {
-	uint32_t x00,x01,x02,x03,x04,x05,x06,x07,x08,x09,x10,x11,x12,x13,x14,x15;
+        __m128i rot2 = _mm_slli_epi32(*x, 2);
+        __m128i _calc = _mm_srli_epi32(*x,(32 - 2));
+
+        __m128i rot13 = _mm_slli_epi32(*x, 13);
+        rot13 = _mm_xor_si128(rot13, _calc);
+        _calc = _mm_srli_epi32(*x,(32 - 13));
+
+        __m128i rot22 = _mm_slli_epi32(*x, 22);
+        rot22 = _mm_xor_si128(rot22, _calc);
+
+        _calc = _mm_srli_epi32(*x,(32 - 22));
+        _calc = _mm_xor_si128(rot22, _calc);
+        _calc = _mm_xor_si128(_calc, rot2);
+        _calc = _mm_xor_si128(_calc, rot13);
+
+        return _calc;
+}
+
+//#define S1(x)           (ROTR(x, 6) ^ ROTR(x, 11) ^ ROTR(x, 25))
+__m128i funct_S1(const __m128i *x)
+{
+        __m128i rot6 = _mm_slli_epi32(*x, 6);
+        __m128i _calc = _mm_srli_epi32(*x,(32 - 6));
+
+        __m128i rot11 = _mm_slli_epi32(*x, 11);
+        rot11 = _mm_xor_si128(rot11, _calc);
+        _calc = _mm_srli_epi32(*x,(32 - 11));
+
+        __m128i rot25 = _mm_slli_epi32(*x, 25);
+        rot25 = _mm_xor_si128(rot25, _calc);
+
+        _calc = _mm_srli_epi32(*x,(32 - 25));
+        _calc = _mm_xor_si128(rot25, _calc);
+        _calc = _mm_xor_si128(_calc, rot6);
+        _calc = _mm_xor_si128(_calc, rot11);
+
+        return _calc;
+}
+
+//#define s0(x)           (ROTR(x, 7) ^ ROTR(x, 18) ^ (x >> 3))
+__m128i funct_s0(const __m128i *x)
+{
+        __m128i rot7 = _mm_slli_epi32(*x, 7);
+        __m128i _calc = _mm_srli_epi32(*x,(32 - 7));
+
+        __m128i rot18 = _mm_slli_epi32(*x, 18);
+        rot18 = _mm_xor_si128(rot18, _calc);
+        _calc = _mm_srli_epi32(*x,(32 - 18));
+
+        __m128i shift3 = _mm_srli_epi32(*x, 3);
+        _calc = _mm_xor_si128(shift3, _calc);
+
+        _calc = _mm_xor_si128(_calc, rot7);
+        _calc = _mm_xor_si128(_calc, rot18);
+
+        return _calc;
+}
+
+//#define s1(x)           (ROTR(x, 17) ^ ROTR(x, 19) ^ (x >> 10))
+__m128i funct_s1(const __m128i *x)
+{
+        __m128i rot17 = _mm_slli_epi32(*x, 17);
+        __m128i _calc = _mm_srli_epi32(*x,(32 - 17));
+
+        __m128i rot19 = _mm_slli_epi32(*x, 19);
+        rot19 = _mm_xor_si128(rot19, _calc);
+        _calc = _mm_srli_epi32(*x,(32 - 19));
+
+        __m128i shift10 = _mm_srli_epi32(*x, 10);
+        _calc = _mm_xor_si128(shift10, _calc);
+
+        _calc = _mm_xor_si128(_calc, rot17);
+        _calc = _mm_xor_si128(_calc, rot19);
+
+        return _calc;
+}
+
+// #define Ch(x, y, z)     ((x & (y ^ z)) ^ z)
+__m128i funct_Ch(__m128i *x, __m128i *y, __m128i *z)
+{
+        __m128i _calc = _mm_xor_si128(*y,*z);
+        _calc = _mm_and_si128(_calc, *x);
+        _calc = _mm_xor_si128(_calc, *z);
+        return _calc;
+}
+
+// #define Maj(x, y, z)    ((x & (y | z)) | (y & z))
+__m128i funct_Maj(__m128i *x, __m128i *y, __m128i *z)
+{
+        __m128i _calc = _mm_or_si128(*y,*z);
+        _calc = _mm_and_si128(_calc, *x);
+        __m128i _calc2 = _mm_and_si128(*y,*z);
+        _calc = _mm_or_si128(_calc, _calc2);
+        return _calc;
+}
+
+/* Elementary functions used by SHA256 */
+//#define Ch(x, y, z)     ((x & (y ^ z)) ^ z)
+//#define Maj(x, y, z)    ((x & (y | z)) | (y & z))
+//#define ROTR(x, n)      ((x >> n) | (x << (32 - n)))
+//#define S0(x)           (ROTR(x, 2) ^ ROTR(x, 13) ^ ROTR(x, 22))
+//#define S1(x)           (ROTR(x, 6) ^ ROTR(x, 11) ^ ROTR(x, 25))
+//#define s0(x)           (ROTR(x, 7) ^ ROTR(x, 18) ^ (x >> 3))
+//#define s1(x)           (ROTR(x, 17) ^ ROTR(x, 19) ^ (x >> 10))
+
+/* SHA256 round function */
+//#define RND(a, b, c, d, e, f, g, h, k) \
+//	do { \
+//		t0 = h + S1(e) + Ch(e, f, g) + k; \
+//		t1 = S0(a) + Maj(a, b, c); \
+//		d += t0; \
+//		h  = t0 + t1; \
+//	} while (0)
+
+void funct_RND(__m128i *a, __m128i *b, __m128i *c, __m128i *d, __m128i *e, __m128i *f, __m128i *g, __m128i *h,
+		          __m128i *k)
+{
+	__m128i t0;
+	__m128i t1;
+	__m128i _calc = funct_S1(e);
+	__m128i _calc1 = funct_Ch(e, f, g);
+	_calc = _mm_add_epi32(_calc,_calc1);
+	_calc = _mm_add_epi32(_calc,*h);
+	t0 = _mm_add_epi32(_calc,*k);
+	_calc = funct_Maj(a,b,c);
+	_calc1 = funct_S0(a);
+	t1 = _mm_add_epi32(_calc,_calc1);
+	*d = _mm_add_epi32(*d, t0);
+	*h = _mm_add_epi32(t1, t0);
+}
+
+/* Adjusted round function for rotating state */
+//#define RNDr(S, W, i) \
+//	RND(S[(64 - i) % 8], S[(65 - i) % 8], \
+//	    S[(66 - i) % 8], S[(67 - i) % 8], \
+//	    S[(68 - i) % 8], S[(69 - i) % 8], \
+//	    S[(70 - i) % 8], S[(71 - i) % 8], \
+//	    W[i] + sha256_k_sidm[i])
+
+
+
+//void sha256_transform_sidm(uint32_t *state, const uint32_t *block, int swap)
+void sha256_transform_sidm(__m128i *state, const __m128i *block, int swap)
+{
+/*
+	uint32_t W[64] __attribute__((aligned(16)));
+	uint32_t S[8] __attribute__((aligned(16)));
+	uint32_t t0 __attribute__((aligned(16)));
+	uint32_t t1 __attribute__((aligned(16)));
+*/
+	uint32_t W[64*4] __attribute__((aligned(16)));
+	uint32_t S[8*4] __attribute__((aligned(16)));
+//	uint32_t t0[4] __attribute__((aligned(16)));
+//	uint32_t t1[4] __attribute__((aligned(16)));
+
+	const __m128i vm = _mm_setr_epi8(12, 13, 14, 15, 8, 9, 10, 11, 4, 5, 6, 7, 0, 1, 2, 3); // for the swap function
+
 	int i;
 
-	x00 = (B[ 0] ^= Bx[ 0]);
-	x01 = (B[ 1] ^= Bx[ 1]);
-	x02 = (B[ 2] ^= Bx[ 2]);
-	x03 = (B[ 3] ^= Bx[ 3]);
-	x04 = (B[ 4] ^= Bx[ 4]);
-	x05 = (B[ 5] ^= Bx[ 5]);
-	x06 = (B[ 6] ^= Bx[ 6]);
-	x07 = (B[ 7] ^= Bx[ 7]);
-	x08 = (B[ 8] ^= Bx[ 8]);
-	x09 = (B[ 9] ^= Bx[ 9]);
-	x10 = (B[10] ^= Bx[10]);
-	x11 = (B[11] ^= Bx[11]);
-	x12 = (B[12] ^= Bx[12]);
-	x13 = (B[13] ^= Bx[13]);
-	x14 = (B[14] ^= Bx[14]);
-	x15 = (B[15] ^= Bx[15]);
-	for (i = 0; i < 8; i += 2) {
-#define R(a, b) (((a) << (b)) | ((a) >> (32 - (b))))
-//		/* Operate on columns. */
-		/* 0,4,8,12        *//* 1,5,9,13           *//* 2,6,10,14          *//* 3,7,11,15 */
-		x04 ^= R(x00+x12, 7);	x09 ^= R(x05+x01, 7);	x14 ^= R(x10+x06, 7);	x03 ^= R(x15+x11, 7);
+	__m128i *WPrt = (__m128i*) W;
+	__m128i *SPrt = (__m128i*) S;
+//	__m128i *T0Prt = (__m128i*) t0;
+//	__m128i *T1Prt = (__m128i*) t1;
+	__m128i _calc;
 
-		x08 ^= R(x04+x00, 9);	x13 ^= R(x09+x05, 9);	x02 ^= R(x14+x10, 9);	x07 ^= R(x03+x15, 9);
-
-		x12 ^= R(x08+x04,13);	x01 ^= R(x13+x09,13);	x06 ^= R(x02+x14,13);	x11 ^= R(x07+x03,13);
-
-		x00 ^= R(x12+x08,18);	x05 ^= R(x01+x13,18);	x10 ^= R(x06+x02,18);	x15 ^= R(x11+x07,18);
-//
-//		/* Operate on rows. */
-//		/* 1,2,3,0         *//* 6,7,4,5            *//* 11,8,9,10          *//* 12,13,14,15 */
-		x01 ^= R(x00+x03, 7);	x06 ^= R(x05+x04, 7);	x11 ^= R(x10+x09, 7);	x12 ^= R(x15+x14, 7);
-//
-		x02 ^= R(x01+x00, 9);	x07 ^= R(x06+x05, 9);	x08 ^= R(x11+x10, 9);	x13 ^= R(x12+x15, 9);
-//
-		x03 ^= R(x02+x01,13);	x04 ^= R(x07+x06,13);	x09 ^= R(x08+x11,13);	x14 ^= R(x13+x12,13);
-//
-		x00 ^= R(x03+x02,18);	x05 ^= R(x04+x07,18);	x10 ^= R(x09+x08,18);	x15 ^= R(x14+x13,18);
-
-#undef R
+	/* 1. Prepare message schedule W. */
+	if (swap) {
+		for (i = 0; i < 16; i++)
+//			W[i] = swab32(block[i]);
+			WPrt[i] = _mm_shuffle_epi8(block[i],vm);
+	} else{
+		for (i = 0; i < 16; i++)
+//			W[i] = swab32(block[i]);
+			WPrt[i] = block[i];
+//		memcpy(W, block, 64*4);
 	}
-	B[ 0] += x00;
-	B[ 1] += x01;
-	B[ 2] += x02;
-	B[ 3] += x03;
-	B[ 4] += x04;
-	B[ 5] += x05;
-	B[ 6] += x06;
-	B[ 7] += x07;
-	B[ 8] += x08;
-	B[ 9] += x09;
-	B[10] += x10;
-	B[11] += x11;
-	B[12] += x12;
-	B[13] += x13;
-	B[14] += x14;
-	B[15] += x15;
+
+	for (i = 16; i < 64; i += 2) {
+		_calc = WPrt[i-2];
+		WPrt[i] = funct_s1(&_calc);
+		_calc = WPrt[i-15];
+		_calc = funct_s0(&_calc);
+		WPrt[i] = _mm_add_epi32(WPrt[i], WPrt[i-7]);
+		WPrt[i] = _mm_add_epi32(WPrt[i], _calc);
+		WPrt[i] = _mm_add_epi32(WPrt[i], WPrt[i-16]);
+
+		_calc = WPrt[i-1];
+		WPrt[i+1] = funct_s1(&_calc);
+		_calc = WPrt[i-14];
+		_calc = funct_s0(&_calc);
+		WPrt[i] = _mm_add_epi32(WPrt[i], WPrt[i-6]);
+		WPrt[i] = _mm_add_epi32(WPrt[i], _calc);
+		WPrt[i] = _mm_add_epi32(WPrt[i], WPrt[i-15]);
+	}
+
+	/* 2. Initialize working variables. */
+	for (i = 0; i < 8; i++)
+		SPrt[i] = state[i];
+// 	memcpy(S, state, 32);
+
+	/* 3. Mix. */
+//	/* Adjusted round function for rotating state */
+//	#define RNDr(S, W, i) \
+//		RND(S[(64 - i) % 8], S[(65 - i) % 8], \
+//		    S[(66 - i) % 8], S[(67 - i) % 8], \
+//		    S[(68 - i) % 8], S[(69 - i) % 8], \
+//		    S[(70 - i) % 8], S[(71 - i) % 8], \
+//		    W[i] + sha256_k_sidm[i])
+
+	for(i=0;i<64;i++){
+		_calc = _mm_set_epi32(sha256_k_sidm[i],sha256_k_sidm[i],sha256_k_sidm[i],sha256_k_sidm[i]);
+		_calc = _mm_add_epi32(_calc, WPrt[i]);
+		funct_RND(SPrt+((64-i)%8),SPrt+((65-i)%8),SPrt+((66-i)%8),SPrt+((67-i)%8),
+				  SPrt+((68-i)%8),SPrt+((69-i)%8),SPrt+((70-i)%8),SPrt+((61-i)%8),
+				  &_calc);
+	}
+/*
+	RNDr(S, W,  0);
+	RNDr(S, W,  1);
+	RNDr(S, W,  2);
+	RNDr(S, W,  3);
+	RNDr(S, W,  4);
+	RNDr(S, W,  5);
+	RNDr(S, W,  6);
+	RNDr(S, W,  7);
+	RNDr(S, W,  8);
+	RNDr(S, W,  9);
+	RNDr(S, W, 10);
+	RNDr(S, W, 11);
+	RNDr(S, W, 12);
+	RNDr(S, W, 13);
+	RNDr(S, W, 14);
+	RNDr(S, W, 15);
+	RNDr(S, W, 16);
+	RNDr(S, W, 17);
+	RNDr(S, W, 18);
+	RNDr(S, W, 19);
+	RNDr(S, W, 20);
+	RNDr(S, W, 21);
+	RNDr(S, W, 22);
+	RNDr(S, W, 23);
+	RNDr(S, W, 24);
+	RNDr(S, W, 25);
+	RNDr(S, W, 26);
+	RNDr(S, W, 27);
+	RNDr(S, W, 28);
+	RNDr(S, W, 29);
+	RNDr(S, W, 30);
+	RNDr(S, W, 31);
+	RNDr(S, W, 32);
+	RNDr(S, W, 33);
+	RNDr(S, W, 34);
+	RNDr(S, W, 35);
+	RNDr(S, W, 36);
+	RNDr(S, W, 37);
+	RNDr(S, W, 38);
+	RNDr(S, W, 39);
+	RNDr(S, W, 40);
+	RNDr(S, W, 41);
+	RNDr(S, W, 42);
+	RNDr(S, W, 43);
+	RNDr(S, W, 44);
+	RNDr(S, W, 45);
+	RNDr(S, W, 46);
+	RNDr(S, W, 47);
+	RNDr(S, W, 48);
+	RNDr(S, W, 49);
+	RNDr(S, W, 50);
+	RNDr(S, W, 51);
+	RNDr(S, W, 52);
+	RNDr(S, W, 53);
+	RNDr(S, W, 54);
+	RNDr(S, W, 55);
+	RNDr(S, W, 56);
+	RNDr(S, W, 57);
+	RNDr(S, W, 58);
+	RNDr(S, W, 59);
+	RNDr(S, W, 60);
+	RNDr(S, W, 61);
+	RNDr(S, W, 62);
+	RNDr(S, W, 63);
+*/
+	/* 4. Mix local working variables into global state */
+	for (i = 0; i < 8; i++)
+		state[i] = _mm_add_epi32(state[i], SPrt[i]);
+//		state[i] += S[i];
 }
 
-static inline void scrypt_core_org(uint32_t *X, uint32_t *V)
+//void sha256_init_sidm(uint32_t *state)
+//{
+//	memcpy(state, sha256_h_sidm, 32);
+//}
+
+static inline void HMAC_SHA256_80_init_sidm(const __m128i *key,
+		__m128i *tstate, __m128i *ostate)
 {
-	uint32_t i, j, k;
+	uint32_t ihash[8 * 4] __attribute__((aligned(16)));
+	uint32_t pad[16 * 4] __attribute__((aligned(16)));
+	int i;
 
-	for (i = 0; i < 1024; i++) {
-		memcpy(&V[i * 32], X, 128);
-		xor_salsa8_org(&X[0], &X[16]);
-		xor_salsa8_org(&X[16], &X[0]);
+	__m128i *ihashPtr = (__m128i*) ihash;
+	__m128i *padPtr = (__m128i*) pad;
+	__m128i _calc;
+
+	/* tstate is assumed to contain the midstate of key */
+//	memcpy(pad, key + 16, 16);
+	padPtr[0] = key[16];
+	padPtr[1] = key[17];
+	padPtr[2] = key[18];
+	padPtr[3] = key[19];
+
+	for (i=0;i<12;i++){
+		padPtr[i+4] = _mm_set_epi32(keypad_sidm[i],keypad_sidm[i],keypad_sidm[i],keypad_sidm[i]);
 	}
 
-	for (i = 0; i < 1024; i++) {
-		j = 32 * (X[16] & 1023);
-		for (k = 0; k < 32; k++)
-			X[k] ^= V[j + k];
-		xor_salsa8_org(&X[0], &X[16]);
-		xor_salsa8_org(&X[16], &X[0]);
+//	memcpy(pad + 4, keypad_sidm, 48);
+	sha256_transform_sidm(tstate, padPtr, 0);
+//	memcpy(ihash, tstate, 32);
+	for (i=0;i<8;i++){
+		ihashPtr[i] = tstate[i];
+	}
+
+//	sha256_init_sidm(ostate);
+	for (i=0; i<8; i++){
+//		*ptr = (__m128i*) & midstate[i * 4];
+		ostate[i] = _mm_set_epi32(sha256_h_sidm[i],sha256_h_sidm[i],sha256_h_sidm[i],sha256_h_sidm[i]);
+	}
+
+	_calc = _mm_set_epi32(0x5c5c5c5c,0x5c5c5c5c,0x5c5c5c5c,0x5c5c5c5c);
+
+	for (i = 0; i < 8; i++)
+//		pad[i] = ihash[i] ^ 0x5c5c5c5c;
+		padPtr[i] = _mm_xor_si128(ihashPtr[i], _calc);
+	for (i=8; i < 16; i++)
+//		pad[i] = 0x5c5c5c5c;
+		padPtr[i] = _calc;
+
+	sha256_transform_sidm(ostate, padPtr, 0);
+
+	for (i=0; i<8; i++){
+//		*ptr = (__m128i*) & midstate[i * 4];
+		tstate[i] = _mm_set_epi32(sha256_h_sidm[i],sha256_h_sidm[i],sha256_h_sidm[i],sha256_h_sidm[i]);
+	}
+//	sha256_init_sidm(tstate);
+	_calc = _mm_set_epi32(0x36363636,0x36363636,0x36363636,0x36363636);
+
+	for (i = 0; i < 8; i++)
+//		pad[i] = ihash[i] ^ 0x36363636;
+		padPtr[i] = _mm_xor_si128(ihashPtr[i], _calc);
+	for (; i < 16; i++)
+//		pad[i] = 0x36363636;
+		padPtr[i] = _calc;
+	sha256_transform_sidm(tstate, padPtr, 0);
+}
+
+static inline void PBKDF2_SHA256_80_128_sidm(const __m128i *tstate,
+	const __m128i *ostate, const __m128i *salt, __m128i *output)
+{
+	uint32_t istate[8 * 4] __attribute__((aligned(32)));
+	uint32_t ostate2[8 * 4] __attribute__((aligned(32)));
+	uint32_t ibuf[16 * 4] __attribute__((aligned(32)));
+	uint32_t obuf[16 * 4] __attribute__((aligned(32)));
+
+	int i, j;
+	__m128i *istatePtr = (__m128i*)istate;
+	__m128i *ostate2Ptr = (__m128i*)ostate2;
+	__m128i *ibufPtr = (__m128i*)ibuf;
+	__m128i *obufPtr = (__m128i*)obuf;
+
+	const __m128i vm = _mm_setr_epi8(12, 13, 14, 15, 8, 9, 10, 11, 4, 5, 6, 7, 0, 1, 2, 3); // for the swap function
+
+	memcpy(istate, tstate, 32);
+	for (i=0;i<8;i++)
+		istatePtr[i] = tstate[i];
+//	sha256_transform_sidm(istate, salt, 0);
+
+	ibufPtr[0] = salt[16];
+	ibufPtr[1] = salt[17];
+	ibufPtr[2] = salt[18];
+	ibufPtr[3] = salt[19];
+//	memcpy(ibuf, salt + 16, 16);
+	for (i=0;i<11;i++){
+		ibufPtr[i+5] = _mm_set_epi32(innerpad_sidm[i],innerpad_sidm[i],innerpad_sidm[i],innerpad_sidm[i]);
+	}
+//	memcpy(ibuf + 5, innerpad_sidm, 44);
+	for (i=0;i<8;i++){
+		obufPtr[i+8] = _mm_set_epi32(outerpad_sidm[i],outerpad_sidm[i],outerpad_sidm[i],outerpad_sidm[i]);
+	}
+//	memcpy(obuf + 8, outerpad_sidm, 32);
+
+	for (i = 0; i < 4; i++) {
+		for (i=0;i<8;i++){
+			obufPtr[i] = istatePtr[i];
+		}
+//		memcpy(obuf, istate, 32);
+		ibufPtr[4] = _mm_set_epi32(i+1, i+1, i+1, i+1);
+//		ibuf[4] = i + 1;
+		sha256_transform_sidm(obufPtr, ibufPtr, 0);
+
+		for (i=0;i<8;i++){
+			ostate2Ptr[i] = ostate[i];
+		}
+//		memcpy(ostate2, ostate, 32);
+
+		sha256_transform_sidm(ostate2Ptr, obufPtr, 0);
+		for (j = 0; j < 8; j++)
+//			output[8 * i + j] = swab32(ostate2[j]);
+			obufPtr[8 * i + j] = _mm_shuffle_epi8(ostate2Ptr[j],vm);
 	}
 }
+
+static inline void PBKDF2_SHA256_128_32_sidm(__m128i *tstate, __m128i *ostate,
+	const __m128i *salt, __m128i *output)
+{
+	uint32_t buf[16 * 4] __attribute__((aligned(16)));
+	int i;
+
+	const __m128i vm = _mm_setr_epi8(12, 13, 14, 15, 8, 9, 10, 11, 4, 5, 6, 7, 0, 1, 2, 3); // for the swap function
+
+	__m128i *bufPtr = (__m128i*) buf;
+    __m128i *finalblkPtr = (__m128i*) finalblk_sidm;
+	sha256_transform_sidm(tstate, salt, 1);
+	sha256_transform_sidm(tstate, salt + 16, 1);
+	sha256_transform_sidm(tstate, finalblkPtr, 0);
+
+	for (i = 0; i < 8; i++)
+		bufPtr[i] = tstate[i];
+//	memcpy(buf, tstate, 32);
+	for (i = 0; i < 8; i++)
+		bufPtr[i+8] = _mm_set_epi32(outerpad_sidm[i],outerpad_sidm[i],outerpad_sidm[i],outerpad_sidm[i]);
+//	memcpy(buf + 8, outerpad_sidm, 32);
+
+	sha256_transform_sidm(ostate, bufPtr, 0);
+	for (i = 0; i < 8; i++)
+		output[i] = _mm_shuffle_epi8(ostate[i],vm);
+//		output[i] = swab32(ostate[i]);
+}
+
+static void scrypt_1024_1_1_256_sidm(const uint32_t *input, uint32_t *output,
+	uint32_t *midstate)
+{
+	uint32_t tstate[8 * 4] __attribute__((aligned(16)));
+	uint32_t ostate[8 * 4]__attribute__((aligned(16)));
+	uint32_t X[32 * 4] __attribute__((aligned(16)));
+	uint32_t XInv[32 * 4] __attribute__((aligned(16)));
+	int i, j;
+	__m128i *inputPtr = (__m128i*) input;
+	__m128i *outputPtr = (__m128i*) output;
+	__m128i *tstatePtr = (__m128i*) tstate;
+	__m128i *ostatePtr = (__m128i*) ostate;
+	__m128i *midstatePtr = (__m128i*) midstate;
+	__m128i *XPtr = (__m128i*) X;
+
+//	memcpy(tstate, midstate, 32);
+	for (i = 0; i < 8; i++)
+		tstatePtr[i] = midstatePtr[i];
+
+	HMAC_SHA256_80_init_sidm(inputPtr, tstatePtr, ostatePtr);
+	PBKDF2_SHA256_80_128_sidm(tstatePtr, ostatePtr, inputPtr, XPtr);
+
+	// need to transpose X 4-colums to 4-rows
+	for (j=0;j<4;j++){
+		for (i=0;i<32;i++){
+			XInv[i*4+j] = X[i+(j*32)];
+		}
+	}
+
+	scrypt_core_sidm(XInv + 0);
+	scrypt_core_sidm(XInv + 32);
+	scrypt_core_sidm(XInv + 64);
+	scrypt_core_sidm(XInv + 96);
+	// need to transpose X 4-rows to 4-colums
+
+	for (j=0;j<4;j++){
+		for (i=0;i<32;i++){
+			X[i+(j*32)] = XInv[i*4+j];
+		}
+	}
+
+	PBKDF2_SHA256_128_32_sidm(tstatePtr, ostatePtr, XPtr, outputPtr);
+}
+
+
+int scanhash_scrypt_sidm(int thr_id, uint32_t *pdata,
+	const uint32_t *ptarget, uint32_t max_nonce, unsigned long *hashes_done)
+{
+	uint32_t data[4 * 20] __attribute__((aligned(16)));
+	uint32_t hash[4 * 8]  __attribute__((aligned(16)));
+	uint32_t midstate[8 * 4] __attribute__((aligned(16)));
+	uint32_t n = pdata[19] - 1;
+	const uint32_t Htarg = ptarget[7];
+	int throughput = 4;
+	int i;
+	__m128i calc;
+	__m128i *dataPtr = (__m128i*) &data[0];
+	__m128i *midstatePtr = (__m128i*) &midstate[0];
+	/* move the data in four columns */
+	for (i=0; i<20; i++){
+		dataPtr[i] = _mm_set_epi32(pdata[i],pdata[i],pdata[i],pdata[i]);
+	}
+//	for (i = 0; i < throughput; i++)
+//		memcpy(data + i * 20, pdata, 80);
+	for (i=0; i<8; i++){
+//		*ptr = (__m128i*) & midstate[i * 4];
+		midstatePtr[i] = _mm_set_epi32(sha256_h_sidm[i],sha256_h_sidm[i],sha256_h_sidm[i],sha256_h_sidm[i]);
+	}
+//	sha256_init_sidm(midstate);
+	sha256_transform_sidm(midstatePtr, dataPtr, 0);
+
+	do {
+		for (i = 0; i < throughput; i++)
+//			data[i * 20 + 19] = ++n;
+			data[19 * 4 + i] = ++n;
+
+			//scrypt_1024_1_1_256(data, hash, midstate, scratchbuf);
+	    scrypt_1024_1_1_256_sidm(data, hash, midstate);
+		for (i = 0; i < throughput; i++) {
+//			if (hash[i * 8 + 7] <= Htarg && fulltest(hash + i * 8, ptarget)) {
+			if (hash[7 * 4 + i] <= Htarg && fulltest(hash + i, ptarget)) {
+				*hashes_done = n - pdata[19] + 1;
+//				pdata[19] = data[i * 20 + 19];
+				pdata[19] = data[19 * 4 + i];
+				return 1;
+			}
+		}
+	} while (n < max_nonce && !work_restart[thr_id].restart);
+
+	*hashes_done = n - pdata[19] + 1;
+	pdata[19] = n;
+	return 0;
+}
+
+
 
