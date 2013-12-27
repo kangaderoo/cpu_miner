@@ -524,7 +524,7 @@ static void scrypt_1024_1_1_256(const uint32_t *input, uint32_t *output,
 //	for (i=0;i<32;i++)
 //		X[i]=i+0xfc4e9831;
 	//X[0] = 1;
-	scrypt_core_sidm(X , V);
+	scrypt_core_sidm(X /*, V*/);
 
 	//scrypt_core_org(X, V);
 
@@ -541,7 +541,6 @@ static void scrypt_1024_1_1_256(const uint32_t *input, uint32_t *output,
 #else
 	scrypt_core(X, V);
 #endif
-
 
 
 	PBKDF2_SHA256_128_32(tstate, ostate, X, output);
@@ -625,7 +624,7 @@ static void scrypt_1024_1_1_256_12way(const uint32_t *input,
 	int i, j, k;
 	
 	V = (uint32_t *)(((uintptr_t)(scratchpad) + 63) & ~ (uintptr_t)(63));
-#if 1
+#if 0
 	for (j = 0; j < 3; j++)
 		for (i = 0; i < 20; i++)
 			for (k = 0; k < 4; k++)
@@ -645,26 +644,26 @@ static void scrypt_1024_1_1_256_12way(const uint32_t *input,
 	PBKDF2_SHA256_80_128_4way(tstate +  0, ostate +  0, W +   0, W +   0);
 	PBKDF2_SHA256_80_128_4way(tstate + 32, ostate + 32, W + 128, W + 128);
 	PBKDF2_SHA256_80_128_4way(tstate + 64, ostate + 64, W + 256, W + 256);
-#if 1
+#if 0
 	for (j = 0; j < 3; j++)
 		for (i = 0; i < 32; i++)
 			for (k = 0; k < 4; k++)
 				X[128 * j + k * 32 + i] = W[128 * j + 4 * i + k];
 #else
-	for (i =0;i<386;i++)
+	for (i =0;i<384;i++)
 		X[i] = W[W_X_LUT[i]];
 #endif
 	scrypt_core_3way(X + 0 * 96, V);
 	scrypt_core_3way(X + 1 * 96, V);
 	scrypt_core_3way(X + 2 * 96, V);
 	scrypt_core_3way(X + 3 * 96, V);
-#if 1
+#if 0
 	for (j = 0; j < 3; j++)
 		for (i = 0; i < 32; i++)
 			for (k = 0; k < 4; k++)
 				W[128 * j + 4 * i + k] = X[128 * j + k * 32 + i];
 #else
-	for (i =0;i<386;i++)
+	for (i =0;i<384;i++)
 		W[i] = X[X_W_LUT[i]];
 #endif
 	PBKDF2_SHA256_128_32_4way(tstate +  0, ostate +  0, W +   0, W +   0);
@@ -777,8 +776,10 @@ int scanhash_scrypt(int thr_id, uint32_t *pdata,
 			scrypt_1024_1_1_256_3way(data, hash, midstate, scratchbuf);
 		else
 #endif
-		scrypt_1024_1_1_256(data, hash, midstate, scratchbuf);
-		
+		{
+			scrypt_1024_1_1_256(data, hash, midstate, scratchbuf);
+		    //scrypt_1024_1_1_256_sidm(data, hash, midstate);
+		}
 		for (i = 0; i < throughput; i++) {
 			if (hash[i * 8 + 7] <= Htarg && fulltest(hash + i * 8, ptarget)) {
 				*hashes_done = n - pdata[19] + 1;
@@ -792,3 +793,5 @@ int scanhash_scrypt(int thr_id, uint32_t *pdata,
 	pdata[19] = n;
 	return 0;
 }
+
+
