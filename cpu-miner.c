@@ -754,8 +754,13 @@ static void *miner_thread(void *userdata)
 		/* scan nonces for a proof-of-work hash */
 		switch (opt_algo) {
 		case ALGO_SCRYPT:
+#if 1
 			rc = scanhash_scrypt(thr_id, work.data, scratchbuf, work.target,
 			                     max_nonce, &hashes_done);
+#else
+			rc = scanhash_scrypt_sidm(thr_id, work.data, work.target,
+			                     max_nonce, &hashes_done);
+#endif
 			break;
 
 		case ALGO_SHA256D:
