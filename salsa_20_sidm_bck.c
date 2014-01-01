@@ -920,7 +920,7 @@ void sha256_transform_sidm(__m128i *state, const __m128i *block, int swap)
 //	uint32_t t0[4] __attribute__((aligned(16)));
 //	uint32_t t1[4] __attribute__((aligned(16)));
 
-	const __m128i vm = _mm_setr_epi8(12, 13, 14, 15, 8, 9, 10, 11, 4, 5, 6, 7, 0, 1, 2, 3); // for the swap function
+	const __m128i vm = _mm_setr_epi8(12, 13, 14, 15, 8, 9, 10, 11, 4, 5, 6, 7, 0, 1, 2, 3); // for the swap32 function
 
 	int i;
 
@@ -1098,7 +1098,7 @@ static inline void HMAC_SHA256_80_init_sidm(const __m128i *key,
 	for (i = 0; i < 8; i++)
 //		pad[i] = ihash[i] ^ 0x5c5c5c5c;
 		padPtr[i] = _mm_xor_si128(ihashPtr[i], _calc);
-	for (i=8; i < 16; i++)
+	for (; i < 16; i++)
 //		pad[i] = 0x5c5c5c5c;
 		padPtr[i] = _calc;
 
@@ -1156,15 +1156,15 @@ static inline void PBKDF2_SHA256_80_128_sidm(const __m128i *tstate,
 //	memcpy(obuf + 8, outerpad_sidm, 32);
 
 	for (i = 0; i < 4; i++) {
-		for (i=0;i<8;i++){
-			obufPtr[i] = istatePtr[i];
+		for (j=0;j<8;j++){
+			obufPtr[j] = istatePtr[j];
 		}
 //		memcpy(obuf, istate, 32);
 		ibufPtr[4] = _mm_set_epi32(i+1, i+1, i+1, i+1);
 //		ibuf[4] = i + 1;
 		sha256_transform_sidm(obufPtr, ibufPtr, 0);
 
-		for (i=0;i<8;i++){
+		for (j=0;j<8;j++){
 			ostate2Ptr[i] = ostate[i];
 		}
 //		memcpy(ostate2, ostate, 32);
@@ -1187,6 +1187,7 @@ static inline void PBKDF2_SHA256_128_32_sidm(__m128i *tstate, __m128i *ostate,
 	__m128i *bufPtr = (__m128i*) buf;
     __m128i *finalblkPtr = (__m128i*) finalblk_sidm;
 	sha256_transform_sidm(tstate, salt, 1);
+//	sha256_transform_sidm(tstate, salt + 16, 1);
 	sha256_transform_sidm(tstate, salt + 16, 1);
 	sha256_transform_sidm(tstate, finalblkPtr, 0);
 
