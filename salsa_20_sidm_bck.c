@@ -293,10 +293,6 @@ static inline void scrypt_core_sidm(uint32_t *X /*, uint32_t *V*/)
 	SourcePtr[3] = _mm_blend_epi16(_calc8, _calc7, 0xcc);
 }
 
-    SourcePtr[0] = *calc_1; //(__m128i*) row1;
-    SourcePtr[1] = *calc_2; //(__m128i*) row1;
-    SourcePtr[2] = *calc_3; //(__m128i*) row1;
-    SourcePtr[3] = *calc_4; //(__m128i*) row1;
 
     SourcePtr[4] = *calc_11; //(__m128i*) row1;
     SourcePtr[5] = *calc_21; //(__m128i*) row1;
