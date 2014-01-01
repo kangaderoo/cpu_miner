@@ -94,39 +94,44 @@ static inline void xor_salsa_sidm(__m128i *calc_18, __m128i *calc_13, __m128i *c
 	int i;
 	__m128i _calc;
 	__m128i _shift_left;
-	__m128i row1 = _mm_xor_si128(*calc_18, *calc_1);;
-	__m128i row2 = _mm_xor_si128(*calc_7, *calc_2);;
-	__m128i row3 = _mm_xor_si128(*calc_9, *calc_3);;
-	__m128i row4 = _mm_xor_si128(*calc_13, *calc_4);;
+	__m128i row1; // = _mm_xor_si128(*calc_18, *calc_1);;
+	__m128i row2; // = _mm_xor_si128(*calc_7, *calc_2);;
+	__m128i row3; // = _mm_xor_si128(*calc_9, *calc_3);;
+	__m128i row4; // = _mm_xor_si128(*calc_13, *calc_4);;
 
 	*calc_18 = _mm_xor_si128(*calc_18, *calc_1);
 	*calc_7 = _mm_xor_si128(*calc_7, *calc_2);
 	*calc_9 = _mm_xor_si128(*calc_9, *calc_3);
 	*calc_13 = _mm_xor_si128(*calc_13, *calc_4);
 
+	row1 = *calc_18;  //X[0]
+	row2 = *calc_7;   //X[3]
+	row3 = *calc_9;   //X[2]
+	row4 = *calc_13;  //X[1]
+
 	for (i = 0; i < 8; i += 2) {
-		/* first row */
+		/* first row  X[3]=f(X0,X1) */
  		_calc = _mm_add_epi32(row1, row4);
 		_shift_left = _mm_slli_epi32(_calc, 7);
 		_calc = _mm_srli_epi32(_calc,(32 - 7));
 		row2 = _mm_xor_si128(row2, _calc);
 		row2 = _mm_xor_si128(row2, _shift_left);
 
-		/* second row */
+		/* second row X[2]=f(X3,X0) */
 		_calc = _mm_add_epi32(row2, row1);
 		_shift_left = _mm_slli_epi32(_calc, 9);
 		_calc = _mm_srli_epi32(_calc,(32 - 9));
 		row3 = _mm_xor_si128(row3, _calc);
 		row3 = _mm_xor_si128(row3, _shift_left);
 
-		/* third row */
+		/* third row X[1]=f(X2,X3) */
 		_calc = _mm_add_epi32(row3, row2);
 		_shift_left = _mm_slli_epi32(_calc, 13);
 		_calc = _mm_srli_epi32(_calc,(32 - 13));
 		row4 = _mm_xor_si128(row4, _calc);
 		row4 = _mm_xor_si128(row4, _shift_left);
 
-		/* fourth row */
+		/* fourth row X[0]=f(X1,X2) */
 		_calc = _mm_add_epi32(row4, row3);
 		_shift_left = _mm_slli_epi32(_calc, 18);
 		_calc = _mm_srli_epi32(_calc,(32 - 18));
@@ -140,28 +145,28 @@ static inline void xor_salsa_sidm(__m128i *calc_18, __m128i *calc_13, __m128i *c
 	// end transpose
 
 		// switch *calc_13 and * calc_7 usage compared to rows
-		/* first column */
+		/* first column X[1]=f(X0,X3) */
 		_calc = _mm_add_epi32(row1, row2);
 		_shift_left = _mm_slli_epi32(_calc, 7);
 		_calc = _mm_srli_epi32(_calc,(32 - 7));
 		row4 = _mm_xor_si128(row4, _calc);
 		row4 = _mm_xor_si128(row4, _shift_left);
 
-		/* second column */
+		/* second column X[2]=f(X1,X0) */
 		_calc = _mm_add_epi32(row4, row1);
 		_shift_left = _mm_slli_epi32(_calc, 9);
 		_calc = _mm_srli_epi32(_calc,(32 - 9));
 		row3 = _mm_xor_si128(row3, _calc);
 		row3 = _mm_xor_si128(row3, _shift_left);
 
-		/* third column */
+		/* third column  X[3]=f(X2,X1) */
 		_calc = _mm_add_epi32(row3, row4);
 		_shift_left = _mm_slli_epi32(_calc, 13);
 		_calc = _mm_srli_epi32(_calc,(32 - 13));
 		row2 = _mm_xor_si128(row2, _calc);
 		row2 = _mm_xor_si128(row2, _shift_left);
 
-		/* fourth column */
+		/* fourth column  X[0]=f(X3,X2) */
 		_calc = _mm_add_epi32(row2, row3);
 		_shift_left = _mm_slli_epi32(_calc, 18);
 		_calc = _mm_srli_epi32(_calc,(32 - 18));
