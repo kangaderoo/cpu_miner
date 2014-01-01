@@ -753,7 +753,7 @@ int scanhash_scrypt(int thr_id, uint32_t *pdata,
 #endif
 
 #if 1
-	throughput = 1;
+	throughput = 12;
 #endif
 	for (i = 0; i < throughput; i++)
 		memcpy(data + i * 20, pdata, 80);
