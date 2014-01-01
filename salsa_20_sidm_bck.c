@@ -187,62 +187,59 @@ static inline void xor_salsa_sidm(__m128i *calc_18, __m128i *calc_13, __m128i *c
 
 static inline void scrypt_core_sidm(uint32_t *X /*, uint32_t *V*/)
 {
-	uint32_t i, j, k;
-
-	__m128i *SourcePtr = (__m128i*) X;
-	uint32_t row1[4] __attribute__((aligned(16))); // = {X[0], X[1], X[2], X[3]};
-	uint32_t row2[4] __attribute__((aligned(16))); // = {X[4], X[5], X[6], X[7]};
-	uint32_t row3[4] __attribute__((aligned(16))); // = {X[8], X[9], X[10], X[11]};
-	uint32_t row4[4] __attribute__((aligned(16))); // = {X[12], X[13], X[14], X[15]};
-
-	uint32_t row11[4] __attribute__((aligned(16))); // = {X[16], X[17], X[18], X[19]};
-	uint32_t row21[4] __attribute__((aligned(16))); // = {X[20], X[21], X[22], X[23]};
-	uint32_t row31[4] __attribute__((aligned(16))); // = {X[24], X[25], X[26], X[27]};
-	uint32_t row41[4] __attribute__((aligned(16))); // = {X[28], X[29], X[30], X[31]};
+	uint32_t i, j;
 
 	__m128i scratch[1024 * 8];
+	__m128i *SourcePtr = (__m128i*) X;
+	uint32_t row1[4] __attribute__((aligned(16)));
+	uint32_t row2[4] __attribute__((aligned(16)));
+	uint32_t row3[4] __attribute__((aligned(16)));
+	uint32_t row4[4] __attribute__((aligned(16)));
+
+	uint32_t row11[4] __attribute__((aligned(16)));
+	uint32_t row21[4] __attribute__((aligned(16)));
+	uint32_t row31[4] __attribute__((aligned(16)));
+	uint32_t row41[4] __attribute__((aligned(16)));
 
 	__m128i *calc_1 = (__m128i*) row1;
 	__m128i *calc_2 = (__m128i*) row2;
 	__m128i *calc_3 = (__m128i*) row3;
 	__m128i *calc_4 = (__m128i*) row4;
 
-	*calc_1 = SourcePtr[0]; //(__m128i*) row1;
-	*calc_2 = SourcePtr[1]; //(__m128i*) row1;
-	*calc_3 = SourcePtr[2]; //(__m128i*) row1;
-	*calc_4 = SourcePtr[3]; //(__m128i*) row1;
-
 	__m128i *calc_11 = (__m128i*) row11;
 	__m128i *calc_21 = (__m128i*) row21;
 	__m128i *calc_31 = (__m128i*) row31;
 	__m128i *calc_41 = (__m128i*) row41;
-
-	*calc_11 = SourcePtr[4]; //(__m128i*) row1;
-	*calc_21 = SourcePtr[5]; //(__m128i*) row1;
-	*calc_31 = SourcePtr[6]; //(__m128i*) row1;
-	*calc_41 = SourcePtr[7]; //(__m128i*) row1;
 
 	__m128i _calc5;
 	__m128i _calc6;
 	__m128i _calc7;
 	__m128i _calc8;
 
-    // __m128i *scratchPrt = (__m128i*) scratch;
+	// working with multiple pointers for the scratch-pad results in minimized instruction count.
+    __m128i *scratchPrt1 = &scratch[0];
+    __m128i *scratchPrt2 = &scratch[1];
+    __m128i *scratchPrt3 = &scratch[2];
+    __m128i *scratchPrt4 = &scratch[3];
+    __m128i *scratchPrt11 = &scratch[4];
+    __m128i *scratchPrt21 = &scratch[5];
+    __m128i *scratchPrt31 = &scratch[6];
+    __m128i *scratchPrt41 = &scratch[7];
 
 	/* transpose the data from *X */
-	_calc5 =_mm_blend_epi16(*calc_11, *calc_31, 0xf0);
-	_calc6 =_mm_blend_epi16(*calc_21, *calc_41, 0x0f);
-	_calc7 =_mm_blend_epi16(*calc_31, *calc_11, 0xf0);
-	_calc8 =_mm_blend_epi16(*calc_41, *calc_21, 0x0f);
+	_calc5 =_mm_blend_epi16(SourcePtr[4], SourcePtr[6], 0xf0);
+	_calc6 =_mm_blend_epi16(SourcePtr[5], SourcePtr[7], 0x0f);
+	_calc7 =_mm_blend_epi16(SourcePtr[6], SourcePtr[4], 0xf0);
+	_calc8 =_mm_blend_epi16(SourcePtr[7], SourcePtr[5], 0x0f);
 	*calc_11 = _mm_blend_epi16(_calc5, _calc8, 0xcc);
 	*calc_21 = _mm_blend_epi16(_calc6, _calc5, 0xcc);
 	*calc_31 = _mm_blend_epi16(_calc7, _calc6, 0xcc);
 	*calc_41 = _mm_blend_epi16(_calc8, _calc7, 0xcc);
 
-	_calc5 =_mm_blend_epi16(*calc_1, *calc_3, 0xf0);
-	_calc6 =_mm_blend_epi16(*calc_2, *calc_4, 0x0f);
-	_calc7 =_mm_blend_epi16(*calc_3, *calc_1, 0xf0);
-	_calc8 =_mm_blend_epi16(*calc_4, *calc_2, 0x0f);
+	_calc5 =_mm_blend_epi16(SourcePtr[0], SourcePtr[2], 0xf0);
+	_calc6 =_mm_blend_epi16(SourcePtr[1], SourcePtr[3], 0x0f);
+	_calc7 =_mm_blend_epi16(SourcePtr[2], SourcePtr[0], 0xf0);
+	_calc8 =_mm_blend_epi16(SourcePtr[3], SourcePtr[1], 0x0f);
 	*calc_1 = _mm_blend_epi16(_calc5, _calc8, 0xcc);
 	*calc_2 = _mm_blend_epi16(_calc6, _calc5, 0xcc);
 	*calc_3 = _mm_blend_epi16(_calc7, _calc6, 0xcc);
@@ -262,19 +259,16 @@ static inline void scrypt_core_sidm(uint32_t *X /*, uint32_t *V*/)
 		xor_salsa_sidm(calc_11,calc_21,calc_31,calc_41,calc_1, calc_2, calc_3, calc_4);
 	}
 	for (i = 0; i < 1024; i++) {
-//		__m128i *scratchprt = scratch[ 8 * (_mm_extract_epi16(*calc_11,0x00) & 1023)];
 		j = 8 * (_mm_extract_epi16(*calc_11,0x00) & 1023);
-//		j = 8 * (row11[0] & 1023);
-//      this section still compiles to too much instructions (about 14 in excess)
-//      called 1024 times......
-		*calc_1 = _mm_xor_si128(*calc_1, scratch[j+0]);
-		*calc_2 = _mm_xor_si128(*calc_2, scratch[j+1]);
-		*calc_3 = _mm_xor_si128(*calc_3, scratch[j+2]);
-		*calc_4 = _mm_xor_si128(*calc_4, scratch[j+3]);
-		*calc_11 = _mm_xor_si128(*calc_11, scratch[j+4]);
-		*calc_21 = _mm_xor_si128(*calc_21, scratch[j+5]);
-		*calc_31 = _mm_xor_si128(*calc_31, scratch[j+6]);
-		*calc_41 = _mm_xor_si128(*calc_41, scratch[j+7]);
+
+		*calc_1 ^=  scratchPrt1[j];
+		*calc_2 ^=  scratchPrt2[j];
+		*calc_3 ^=  scratchPrt3[j];
+		*calc_4 ^=  scratchPrt4[j];
+		*calc_11 ^= scratchPrt11[j];
+		*calc_21 ^=  scratchPrt21[j];
+		*calc_31 ^=  scratchPrt31[j];
+		*calc_41 ^=  scratchPrt41[j];
 
 		xor_salsa_sidm(calc_1, calc_2, calc_3, calc_4,calc_11,calc_21,calc_31,calc_41);
 		xor_salsa_sidm(calc_11,calc_21,calc_31,calc_41,calc_1, calc_2, calc_3, calc_4);
@@ -284,19 +278,20 @@ static inline void scrypt_core_sidm(uint32_t *X /*, uint32_t *V*/)
 	_calc6 =_mm_blend_epi16(*calc_21, *calc_41, 0x0f);
 	_calc7 =_mm_blend_epi16(*calc_31, *calc_11, 0xf0);
 	_calc8 =_mm_blend_epi16(*calc_41, *calc_21, 0x0f);
-	*calc_11 = _mm_blend_epi16(_calc5, _calc8, 0xcc);
-	*calc_21 = _mm_blend_epi16(_calc6, _calc5, 0xcc);
-	*calc_31 = _mm_blend_epi16(_calc7, _calc6, 0xcc);
-	*calc_41 = _mm_blend_epi16(_calc8, _calc7, 0xcc);
+	SourcePtr[4] = _mm_blend_epi16(_calc5, _calc8, 0xcc);
+	SourcePtr[5] = _mm_blend_epi16(_calc6, _calc5, 0xcc);
+	SourcePtr[6] = _mm_blend_epi16(_calc7, _calc6, 0xcc);
+	SourcePtr[7] = _mm_blend_epi16(_calc8, _calc7, 0xcc);
 
 	_calc5 =_mm_blend_epi16(*calc_1, *calc_3, 0xf0);
 	_calc6 =_mm_blend_epi16(*calc_2, *calc_4, 0x0f);
 	_calc7 =_mm_blend_epi16(*calc_3, *calc_1, 0xf0);
 	_calc8 =_mm_blend_epi16(*calc_4, *calc_2, 0x0f);
-	*calc_1 = _mm_blend_epi16(_calc5, _calc8, 0xcc);
-	*calc_2 = _mm_blend_epi16(_calc6, _calc5, 0xcc);
-	*calc_3 = _mm_blend_epi16(_calc7, _calc6, 0xcc);
-	*calc_4 = _mm_blend_epi16(_calc8, _calc7, 0xcc);
+	SourcePtr[0] = _mm_blend_epi16(_calc5, _calc8, 0xcc);
+	SourcePtr[1] = _mm_blend_epi16(_calc6, _calc5, 0xcc);
+	SourcePtr[2] = _mm_blend_epi16(_calc7, _calc6, 0xcc);
+	SourcePtr[3] = _mm_blend_epi16(_calc8, _calc7, 0xcc);
+}
 
     SourcePtr[0] = *calc_1; //(__m128i*) row1;
     SourcePtr[1] = *calc_2; //(__m128i*) row1;
