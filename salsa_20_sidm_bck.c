@@ -1848,7 +1848,7 @@ __m128i funct_Maj(__m128i *x, __m128i *y, __m128i *z)
 //	} while (0)
 
 void funct_RND(__m128i *a, __m128i *b, __m128i *c, __m128i *d, __m128i *e, __m128i *f, __m128i *g, __m128i *h,
-		          __m128i *k)
+		          __m128i k)
 {
 	__m128i t0;
 	__m128i t1;
@@ -1856,7 +1856,7 @@ void funct_RND(__m128i *a, __m128i *b, __m128i *c, __m128i *d, __m128i *e, __m12
 	__m128i _calc1 = funct_Ch(e, f, g);
 	_calc = _mm_add_epi32(_calc,_calc1);
 	_calc = _mm_add_epi32(_calc,*h);
-	t0 = _mm_add_epi32(_calc,*k);
+	t0 = _mm_add_epi32(_calc,k);
 	_calc = funct_Maj(a,b,c);
 	_calc1 = funct_S0(a);
 	t1 = _mm_add_epi32(_calc,_calc1);
@@ -1910,22 +1910,25 @@ void sha256_transform_sidm(__m128i *state, const __m128i *block, int swap)
 //		memcpy(W, block, 64*4);
 	}
 
+//	W[i]   = s1(W[i - 2]) + W[i - 7] + s0(W[i - 15]) + W[i - 16];
+//	W[i+1] = s1(W[i - 1]) + W[i - 6] + s0(W[i - 14]) + W[i - 15];
+
 	for (i = 16; i < 64; i += 2) {
 		_calc = WPrt[i-2];
-		WPrt[i] = funct_s1(&_calc);
+		WPrt[i] = funct_s1(_calc);
 		_calc = WPrt[i-15];
-		_calc = funct_s0(&_calc);
+		_calc = funct_s0(_calc);
 		WPrt[i] = _mm_add_epi32(WPrt[i], WPrt[i-7]);
 		WPrt[i] = _mm_add_epi32(WPrt[i], _calc);
 		WPrt[i] = _mm_add_epi32(WPrt[i], WPrt[i-16]);
 
 		_calc = WPrt[i-1];
-		WPrt[i+1] = funct_s1(&_calc);
+		WPrt[i+1] = funct_s1(_calc);
 		_calc = WPrt[i-14];
-		_calc = funct_s0(&_calc);
-		WPrt[i] = _mm_add_epi32(WPrt[i], WPrt[i-6]);
-		WPrt[i] = _mm_add_epi32(WPrt[i], _calc);
-		WPrt[i] = _mm_add_epi32(WPrt[i], WPrt[i-15]);
+		_calc = funct_s0(_calc);
+		WPrt[i+1] = _mm_add_epi32(WPrt[i+1], WPrt[i-6]);
+		WPrt[i+1] = _mm_add_epi32(WPrt[i+1], _calc);
+		WPrt[i+1] = _mm_add_epi32(WPrt[i+1], WPrt[i-15]);
 	}
 
 	/* 2. Initialize working variables. */
@@ -1946,8 +1949,8 @@ void sha256_transform_sidm(__m128i *state, const __m128i *block, int swap)
 		_calc = _mm_set_epi32(sha256_k_sidm[i],sha256_k_sidm[i],sha256_k_sidm[i],sha256_k_sidm[i]);
 		_calc = _mm_add_epi32(_calc, WPrt[i]);
 		funct_RND(SPrt+((64-i)%8),SPrt+((65-i)%8),SPrt+((66-i)%8),SPrt+((67-i)%8),
-				  SPrt+((68-i)%8),SPrt+((69-i)%8),SPrt+((70-i)%8),SPrt+((61-i)%8),
-				  &_calc);
+				  SPrt+((68-i)%8),SPrt+((69-i)%8),SPrt+((70-i)%8),SPrt+((71-i)%8),
+				  _calc);
 	}
 /*
 	RNDr(S, W,  0);
@@ -2104,7 +2107,7 @@ static inline void PBKDF2_SHA256_80_128_sidm(const __m128i *tstate,
 
 	const __m128i vm = _mm_setr_epi8(12, 13, 14, 15, 8, 9, 10, 11, 4, 5, 6, 7, 0, 1, 2, 3); // for the swap function
 
-	memcpy(istate, tstate, 32);
+//	memcpy(istate, tstate, 32);
 	for (i=0;i<8;i++)
 		istatePtr[i] = tstate[i];
 //	sha256_transform_sidm(istate, salt, 0);
@@ -2140,7 +2143,7 @@ static inline void PBKDF2_SHA256_80_128_sidm(const __m128i *tstate,
 		sha256_transform_sidm(ostate2Ptr, obufPtr, 0);
 		for (j = 0; j < 8; j++)
 //			output[8 * i + j] = swab32(ostate2[j]);
-			obufPtr[8 * i + j] = _mm_shuffle_epi8(ostate2Ptr[j],vm);
+			output[8 * i + j] = _mm_shuffle_epi8(ostate2Ptr[j],vm);
 	}
 }
 
@@ -2201,10 +2204,14 @@ static void scrypt_1024_1_1_256_sidm(const uint32_t *input, uint32_t *output,
 		}
 	}
 
-	scrypt_core_sidm(XInv + 0);
-	scrypt_core_sidm(XInv + 32);
-	scrypt_core_sidm(XInv + 64);
-	scrypt_core_sidm(XInv + 96);
+//	scrypt_core_sidm_4way(XInv);
+
+	scrypt_core_sidm_2way(XInv);
+	scrypt_core_sidm_2way(XInv+64);
+//	scrypt_core_sidm(XInv + 0);
+//	scrypt_core_sidm(XInv + 32);
+//	scrypt_core_sidm(XInv + 64);
+//	scrypt_core_sidm(XInv + 96);
 	// need to transpose X 4-rows to 4-colums
 
 	for (j=0;j<4;j++){
@@ -2246,7 +2253,7 @@ int scanhash_scrypt_sidm(int thr_id, uint32_t *pdata,
 	do {
 		for (i = 0; i < throughput; i++)
 //			data[i * 20 + 19] = ++n;
-			data[19 * 4 + i] = ++n;
+			data[19 * throughput + i] = ++n;
 
 			//scrypt_1024_1_1_256(data, hash, midstate, scratchbuf);
 	    scrypt_1024_1_1_256_sidm(data, hash, midstate);
@@ -2255,7 +2262,7 @@ int scanhash_scrypt_sidm(int thr_id, uint32_t *pdata,
 			if (hash[7 * 4 + i] <= Htarg && fulltest(hash + i, ptarget)) {
 				*hashes_done = n - pdata[19] + 1;
 //				pdata[19] = data[i * 20 + 19];
-				pdata[19] = data[19 * 4 + i];
+				pdata[19] = data[19 * throughput + i];
 				return 1;
 			}
 		}
