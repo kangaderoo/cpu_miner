@@ -300,6 +300,207 @@ static inline void xor_salsa_sidm_3way(__m128i *calc_11, __m128i *calc_21, __m12
 	__m128i _calc_x2;
 	__m128i _calc_x3;
 	__m128i _shift_left;
+	__m128i X1[4];
+	__m128i X2[4];
+	__m128i X3[4];
+
+	X1[0] = calc_11[0];
+	X1[1] = calc_11[1];
+	X1[2] = calc_11[2];
+	X1[3] = calc_11[3];
+
+	X2[0] = calc_21[0];
+	X2[1] = calc_21[1];
+	X2[2] = calc_21[2];
+	X2[3] = calc_21[3];
+
+	X3[0] = calc_31[0];
+	X3[1] = calc_31[1];
+	X3[2] = calc_31[2];
+	X3[3] = calc_31[3];
+
+	for (i = 0; i < 8; i += 2) {
+		/* first row  X[3]=f(X0,X1) */
+ 		_calc_x1 = _mm_add_epi32(X1[0], X1[1]);     //X[0] and X[1]
+ 		_calc_x2 = _mm_add_epi32(X2[0], X2[1]);     //X[0] and X[1]
+ 		_calc_x3 = _mm_add_epi32(X3[0], X3[1]);     //X[0] and X[1]
+		_shift_left = _mm_slli_epi32(_calc_x1, 7);
+		X1[3] ^= _shift_left;
+		_shift_left = _mm_slli_epi32(_calc_x2, 7);
+		X2[3] ^= _shift_left;
+		_shift_left = _mm_slli_epi32(_calc_x3, 7);
+		X3[3] ^= _shift_left;
+		_calc_x1 = _mm_srli_epi32(_calc_x1,(32 - 7));
+		_calc_x2 = _mm_srli_epi32(_calc_x2,(32 - 7));
+		_calc_x3 = _mm_srli_epi32(_calc_x3,(32 - 7));
+		X1[3] ^= _calc_x1;
+		X2[3] ^= _calc_x2;
+		X3[3] ^= _calc_x3;
+
+		/* second rows X[2]=f(X3,X0) */
+ 		_calc_x1 = _mm_add_epi32(X1[3], X1[0]);     //X[3] and X[0]
+ 		_calc_x2 = _mm_add_epi32(X2[3], X2[0]);     //X[3] and X[0]
+ 		_calc_x3 = _mm_add_epi32(X3[3], X3[0]);     //X[3] and X[0]
+		_shift_left = _mm_slli_epi32(_calc_x1, 9);
+		X1[2] ^= _shift_left;
+		_shift_left = _mm_slli_epi32(_calc_x2, 9);
+		X2[2] ^= _shift_left;
+		_shift_left = _mm_slli_epi32(_calc_x3, 9);
+		X3[2] ^= _shift_left;
+		_calc_x1 = _mm_srli_epi32(_calc_x1,(32 - 9));
+		_calc_x2 = _mm_srli_epi32(_calc_x2,(32 - 9));
+		_calc_x3 = _mm_srli_epi32(_calc_x3,(32 - 9));
+		X1[2] ^= _calc_x1;
+		X2[2] ^= _calc_x2;
+		X3[2] ^= _calc_x3;
+
+		/* third rows X[1]=f(X2,X3) */
+ 		_calc_x1 = _mm_add_epi32(X1[2], X1[3]);     //X[2] and X[3]
+ 		_calc_x2 = _mm_add_epi32(X2[2], X2[3]);     //X[2] and X[3]
+ 		_calc_x3 = _mm_add_epi32(X3[2], X3[3]);     //X[2] and X[3]
+		_shift_left = _mm_slli_epi32(_calc_x1, 13);
+		X1[1] ^= _shift_left;
+		_shift_left = _mm_slli_epi32(_calc_x2, 13);
+		X2[1] ^= _shift_left;
+		_shift_left = _mm_slli_epi32(_calc_x3, 13);
+		X3[1] ^= _shift_left;
+		_calc_x1 = _mm_srli_epi32(_calc_x1,(32 - 13));
+		_calc_x2 = _mm_srli_epi32(_calc_x2,(32 - 13));
+		_calc_x3 = _mm_srli_epi32(_calc_x3,(32 - 13));
+		X1[1] ^= _calc_x1;
+		X2[1] ^= _calc_x2;
+		X3[1] ^= _calc_x3;
+
+		/* fourth rows X[0]=f(X1,X2) */
+ 		_calc_x1 = _mm_add_epi32(X1[1], X1[2]);     //X[1] and X[2]
+ 		_calc_x2 = _mm_add_epi32(X2[1], X2[2]);     //X[1] and X[2]
+ 		_calc_x3 = _mm_add_epi32(X3[1], X3[2]);     //X[1] and X[2]
+		_shift_left = _mm_slli_epi32(_calc_x1, 18);
+		X1[0] ^= _shift_left;
+		_shift_left = _mm_slli_epi32(_calc_x2, 18);
+		X2[0] ^= _shift_left;
+		_shift_left = _mm_slli_epi32(_calc_x3, 18);
+		X3[0] ^= _shift_left;
+		_calc_x1 = _mm_srli_epi32(_calc_x1,(32 - 18));
+		_calc_x2 = _mm_srli_epi32(_calc_x2,(32 - 18));
+		_calc_x3 = _mm_srli_epi32(_calc_x3,(32 - 18));
+		X1[0] ^= _calc_x1;
+		X2[0] ^= _calc_x2;
+		X3[0] ^= _calc_x3;
+
+	// transpose_matrix(row1, row2, row3, row4, row_to_column);
+		X1[3] = _mm_shuffle_epi32(X1[3],0x93);    //x[3]
+		X2[3] = _mm_shuffle_epi32(X2[3],0x93);    //x[3]
+		X3[3] = _mm_shuffle_epi32(X3[3],0x93);    //x[3]
+		X1[2] = _mm_shuffle_epi32(X1[2],0x4e);    //x[2]
+		X2[2] = _mm_shuffle_epi32(X2[2],0x4e);    //x[2]
+		X3[2] = _mm_shuffle_epi32(X3[2],0x4e);    //x[2]
+		X1[1] = _mm_shuffle_epi32(X1[1],0x39);    //x[1]
+		X2[1] = _mm_shuffle_epi32(X2[1],0x39);    //x[1]
+		X3[1] = _mm_shuffle_epi32(X3[1],0x39);    //x[1]
+	// end transpose
+
+		// switch *calc_13 and * calc_7 usage compared to rows
+		/* first column X[1]=f(X0,X3) */
+ 		_calc_x1 = _mm_add_epi32(X1[0], X1[3]);     //X[0] and X[3]
+ 		_calc_x2 = _mm_add_epi32(X2[0], X2[3]);     //X[0] and X[3]
+ 		_calc_x3 = _mm_add_epi32(X3[0], X3[3]);     //X[0] and X[3]
+		_shift_left = _mm_slli_epi32(_calc_x1, 7);
+		X1[1] ^= _shift_left;
+		_shift_left = _mm_slli_epi32(_calc_x2, 7);
+		X2[1] ^= _shift_left;
+		_shift_left = _mm_slli_epi32(_calc_x3, 7);
+		X3[1] ^= _shift_left;
+		_calc_x1 = _mm_srli_epi32(_calc_x1,(32 - 7));
+		_calc_x2 = _mm_srli_epi32(_calc_x2,(32 - 7));
+		_calc_x3 = _mm_srli_epi32(_calc_x3,(32 - 7));
+		X1[1] ^= _calc_x1;
+		X2[1] ^= _calc_x2;
+		X3[1] ^= _calc_x3;
+
+		/* second column X[2]=f(X1,X0) */
+ 		_calc_x1 = _mm_add_epi32(X1[1], X1[0]);     //X[1] and X[0]
+ 		_calc_x2 = _mm_add_epi32(X2[1], X2[0]);     //X[1] and X[0]
+ 		_calc_x3 = _mm_add_epi32(X3[1], X3[0]);     //X[1] and X[0]
+		_shift_left = _mm_slli_epi32(_calc_x1, 9);
+		X1[2] ^= _shift_left;
+		_shift_left = _mm_slli_epi32(_calc_x2, 9);
+		X2[2] ^= _shift_left;
+		_shift_left = _mm_slli_epi32(_calc_x3, 9);
+		X3[2] ^= _shift_left;
+		_calc_x1 = _mm_srli_epi32(_calc_x1,(32 - 9));
+		_calc_x2 = _mm_srli_epi32(_calc_x2,(32 - 9));
+		_calc_x3 = _mm_srli_epi32(_calc_x3,(32 - 9));
+		X1[2] ^= _calc_x1;
+		X2[2] ^= _calc_x2;
+		X3[2] ^= _calc_x3;
+
+		/* third column  X[3]=f(X2,X1) */
+ 		_calc_x1 = _mm_add_epi32(X1[2], X1[1]);     //X[2] and X[1]
+ 		_calc_x2 = _mm_add_epi32(X2[2], X2[1]);     //X[2] and X[1]
+ 		_calc_x3 = _mm_add_epi32(X3[2], X3[1]);     //X[2] and X[1]
+		_shift_left = _mm_slli_epi32(_calc_x1, 13);
+		X1[3] ^= _shift_left;
+		_shift_left = _mm_slli_epi32(_calc_x2, 13);
+		X2[3] ^= _shift_left;
+		_shift_left = _mm_slli_epi32(_calc_x3, 13);
+		X3[3] ^= _shift_left;
+		_calc_x1 = _mm_srli_epi32(_calc_x1,(32 - 13));
+		_calc_x2 = _mm_srli_epi32(_calc_x2,(32 - 13));
+		_calc_x3 = _mm_srli_epi32(_calc_x3,(32 - 13));
+		X1[3] ^= _calc_x1;
+		X2[3] ^= _calc_x2;
+		X3[3] ^= _calc_x3;
+
+		/* fourth column  X[0]=f(X3,X2) */
+ 		_calc_x1 = _mm_add_epi32(X1[3], X1[2]);     //X[3] and X[2]
+ 		_calc_x2 = _mm_add_epi32(X2[3], X2[2]);     //X[3] and X[2]
+ 		_calc_x3 = _mm_add_epi32(X3[3], X3[2]);     //X[3] and X[2]
+		_shift_left = _mm_slli_epi32(_calc_x1, 18);
+		X1[0] ^= _shift_left;
+		_shift_left = _mm_slli_epi32(_calc_x2, 18);
+		X2[0] ^= _shift_left;
+		_shift_left = _mm_slli_epi32(_calc_x3, 18);
+		X3[0] ^= _shift_left;
+		_calc_x1 = _mm_srli_epi32(_calc_x1,(32 - 18));
+		_calc_x2 = _mm_srli_epi32(_calc_x2,(32 - 18));
+		_calc_x3 = _mm_srli_epi32(_calc_x3,(32 - 18));
+		X1[0] ^= _calc_x1;		//X[0]
+		X2[0] ^= _calc_x2;		//X[0]
+		X3[0] ^= _calc_x3;		//X[0]
+
+	// transpose_matrix(row1, row2, row3, row4, row_to_column);
+		X1[3] = _mm_shuffle_epi32(X1[3],0x39);    //x[3]
+		X2[3] = _mm_shuffle_epi32(X2[3],0x39);    //x[3]
+		X3[3] = _mm_shuffle_epi32(X3[3],0x39);    //x[3]
+		X1[2] = _mm_shuffle_epi32(X1[2],0x4e);    //x[2]
+		X2[2] = _mm_shuffle_epi32(X2[2],0x4e);    //x[2]
+		X3[2] = _mm_shuffle_epi32(X3[2],0x4e);    //x[2]
+		X1[1] = _mm_shuffle_epi32(X1[1],0x93);    //x[1]
+		X2[1] = _mm_shuffle_epi32(X2[1],0x93);    //x[1]
+		X3[1] = _mm_shuffle_epi32(X3[1],0x93);    //x[1]
+
+	// end transpose
+	}
+
+	calc_11[0] = _mm_add_epi32(calc_11[0], X1[0]);
+	calc_11[1] = _mm_add_epi32(calc_11[1], X1[1]);
+	calc_11[2] = _mm_add_epi32(calc_11[2], X1[2]);
+	calc_11[3] = _mm_add_epi32(calc_11[3], X1[3]);
+
+	calc_21[0] = _mm_add_epi32(calc_21[0], X2[0]);
+	calc_21[1] = _mm_add_epi32(calc_21[1], X2[1]);
+	calc_21[2] = _mm_add_epi32(calc_21[2], X2[2]);
+	calc_21[3] = _mm_add_epi32(calc_21[3], X2[3]);
+
+	calc_31[0] = _mm_add_epi32(calc_31[0], X3[0]);
+	calc_31[1] = _mm_add_epi32(calc_31[1], X3[1]);
+	calc_31[2] = _mm_add_epi32(calc_31[2], X3[2]);
+	calc_31[3] = _mm_add_epi32(calc_31[3], X3[3]);
+
+}
+
+
 	__m128i X1[4]; // = _mm_xor_si128(*calc_18, *calc_1);;
 	__m128i X2[4]; // = _mm_xor_si128(*calc_7, *calc_2);;
 	__m128i X3[4]; // = _mm_xor_si128(*calc_9, *calc_3);;
