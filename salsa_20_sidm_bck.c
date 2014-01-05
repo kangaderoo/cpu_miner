@@ -760,9 +760,18 @@ static inline void scrypt_core_sidm_3way(uint32_t *X /*, uint32_t *V*/)
 	SourcePtr[23] = _mm_blend_epi16(_calc8, _calc7, 0xcc);
 }
 
+static inline void xor_salsa_sidm_4way(__m128i *calc_11, __m128i *calc_21, __m128i *calc_31, __m128i *calc_41)
+{
+	int i;
+	__m128i _calc_x1;
+	__m128i _calc_x2;
+	__m128i _calc_x3;
+	__m128i _calc_x4;
+	__m128i _shift_left;
 	__m128i X1[4]; // = _mm_xor_si128(*calc_18, *calc_1);;
 	__m128i X2[4]; // = _mm_xor_si128(*calc_7, *calc_2);;
 	__m128i X3[4]; // = _mm_xor_si128(*calc_9, *calc_3);;
+	__m128i X4[4]; // = _mm_xor_si128(*calc_9, *calc_3);;
 
 	X1[0] = calc_11[0];
 	X1[1] = calc_11[1];
@@ -779,6 +788,11 @@ static inline void scrypt_core_sidm_3way(uint32_t *X /*, uint32_t *V*/)
 	X3[2] = calc_31[2];
 	X3[3] = calc_31[3];
 
+	X4[0] = calc_41[0];
+	X4[1] = calc_41[1];
+	X4[2] = calc_41[2];
+	X4[3] = calc_41[3];
+
 //	row1 = *calc_18;
 //	row2 = *calc_7;
 //	row3 = *calc_9;
@@ -794,80 +808,103 @@ static inline void scrypt_core_sidm_3way(uint32_t *X /*, uint32_t *V*/)
  		_calc_x1 = _mm_add_epi32(X1[0], X1[1]);     //X[0] and X[1]
  		_calc_x2 = _mm_add_epi32(X2[0], X2[1]);     //X[0] and X[1]
  		_calc_x3 = _mm_add_epi32(X3[0], X3[1]);     //X[0] and X[1]
+ 		_calc_x4 = _mm_add_epi32(X4[0], X4[1]);     //X[0] and X[1]
 		_shift_left = _mm_slli_epi32(_calc_x1, 7);
 		X1[3] ^= _shift_left;
 		_shift_left = _mm_slli_epi32(_calc_x2, 7);
 		X2[3] ^= _shift_left;
 		_shift_left = _mm_slli_epi32(_calc_x3, 7);
 		X3[3] ^= _shift_left;
+		_shift_left = _mm_slli_epi32(_calc_x4, 7);
+		X4[3] ^= _shift_left;
 		_calc_x1 = _mm_srli_epi32(_calc_x1,(32 - 7));
 		_calc_x2 = _mm_srli_epi32(_calc_x2,(32 - 7));
 		_calc_x3 = _mm_srli_epi32(_calc_x3,(32 - 7));
+		_calc_x4 = _mm_srli_epi32(_calc_x4,(32 - 7));
 		X1[3] ^= _calc_x1;
 		X2[3] ^= _calc_x2;
 		X3[3] ^= _calc_x3;
+		X4[3] ^= _calc_x4;
 
 		/* second rows X[2]=f(X3,X0) */
  		_calc_x1 = _mm_add_epi32(X1[3], X1[0]);     //X[3] and X[0]
  		_calc_x2 = _mm_add_epi32(X2[3], X2[0]);     //X[3] and X[0]
  		_calc_x3 = _mm_add_epi32(X3[3], X3[0]);     //X[3] and X[0]
+ 		_calc_x4 = _mm_add_epi32(X4[3], X4[0]);     //X[3] and X[0]
 		_shift_left = _mm_slli_epi32(_calc_x1, 9);
 		X1[2] ^= _shift_left;
 		_shift_left = _mm_slli_epi32(_calc_x2, 9);
 		X2[2] ^= _shift_left;
 		_shift_left = _mm_slli_epi32(_calc_x3, 9);
 		X3[2] ^= _shift_left;
+		_shift_left = _mm_slli_epi32(_calc_x4, 9);
+		X4[2] ^= _shift_left;
 		_calc_x1 = _mm_srli_epi32(_calc_x1,(32 - 9));
 		_calc_x2 = _mm_srli_epi32(_calc_x2,(32 - 9));
 		_calc_x3 = _mm_srli_epi32(_calc_x3,(32 - 9));
+		_calc_x4 = _mm_srli_epi32(_calc_x4,(32 - 9));
 		X1[2] ^= _calc_x1;
 		X2[2] ^= _calc_x2;
 		X3[2] ^= _calc_x3;
+		X4[2] ^= _calc_x4;
 
 		/* third rows X[1]=f(X2,X3) */
  		_calc_x1 = _mm_add_epi32(X1[2], X1[3]);     //X[2] and X[3]
  		_calc_x2 = _mm_add_epi32(X2[2], X2[3]);     //X[2] and X[3]
  		_calc_x3 = _mm_add_epi32(X3[2], X3[3]);     //X[2] and X[3]
+ 		_calc_x4 = _mm_add_epi32(X4[2], X4[3]);     //X[2] and X[3]
 		_shift_left = _mm_slli_epi32(_calc_x1, 13);
 		X1[1] ^= _shift_left;
 		_shift_left = _mm_slli_epi32(_calc_x2, 13);
 		X2[1] ^= _shift_left;
 		_shift_left = _mm_slli_epi32(_calc_x3, 13);
 		X3[1] ^= _shift_left;
+		_shift_left = _mm_slli_epi32(_calc_x4, 13);
+		X4[1] ^= _shift_left;
 		_calc_x1 = _mm_srli_epi32(_calc_x1,(32 - 13));
 		_calc_x2 = _mm_srli_epi32(_calc_x2,(32 - 13));
 		_calc_x3 = _mm_srli_epi32(_calc_x3,(32 - 13));
+		_calc_x4 = _mm_srli_epi32(_calc_x4,(32 - 13));
 		X1[1] ^= _calc_x1;
 		X2[1] ^= _calc_x2;
 		X3[1] ^= _calc_x3;
+		X4[1] ^= _calc_x4;
 
 		/* fourth rows X[0]=f(X1,X2) */
  		_calc_x1 = _mm_add_epi32(X1[1], X1[2]);     //X[1] and X[2]
  		_calc_x2 = _mm_add_epi32(X2[1], X2[2]);     //X[1] and X[2]
  		_calc_x3 = _mm_add_epi32(X3[1], X3[2]);     //X[1] and X[2]
+ 		_calc_x4 = _mm_add_epi32(X4[1], X4[2]);     //X[1] and X[2]
 		_shift_left = _mm_slli_epi32(_calc_x1, 18);
 		X1[0] ^= _shift_left;
 		_shift_left = _mm_slli_epi32(_calc_x2, 18);
 		X2[0] ^= _shift_left;
 		_shift_left = _mm_slli_epi32(_calc_x3, 18);
 		X3[0] ^= _shift_left;
+		_shift_left = _mm_slli_epi32(_calc_x4, 18);
+		X4[0] ^= _shift_left;
 		_calc_x1 = _mm_srli_epi32(_calc_x1,(32 - 18));
 		_calc_x2 = _mm_srli_epi32(_calc_x2,(32 - 18));
 		_calc_x3 = _mm_srli_epi32(_calc_x3,(32 - 18));
+		_calc_x4 = _mm_srli_epi32(_calc_x4,(32 - 18));
 		X1[0] ^= _calc_x1;
 		X2[0] ^= _calc_x2;
 		X3[0] ^= _calc_x3;
+		X4[0] ^= _calc_x4;
 
 	// transpose_matrix(row1, row2, row3, row4, row_to_column);
 		X1[3] = _mm_shuffle_epi32(X1[3],0x93);    //x[3]
 		X2[3] = _mm_shuffle_epi32(X2[3],0x93);    //x[3]
 		X3[3] = _mm_shuffle_epi32(X3[3],0x93);    //x[3]
+		X4[3] = _mm_shuffle_epi32(X4[3],0x93);    //x[3]
 		X1[2] = _mm_shuffle_epi32(X1[2],0x4e);    //x[2]
 		X2[2] = _mm_shuffle_epi32(X2[2],0x4e);    //x[2]
 		X3[2] = _mm_shuffle_epi32(X3[2],0x4e);    //x[2]
+		X4[2] = _mm_shuffle_epi32(X4[2],0x4e);    //x[2]
 		X1[1] = _mm_shuffle_epi32(X1[1],0x39);    //x[1]
 		X2[1] = _mm_shuffle_epi32(X2[1],0x39);    //x[1]
 		X3[1] = _mm_shuffle_epi32(X3[1],0x39);    //x[1]
+		X4[1] = _mm_shuffle_epi32(X4[1],0x39);    //x[1]
 	// end transpose
 
 		// switch *calc_13 and * calc_7 usage compared to rows
@@ -875,98 +912,135 @@ static inline void scrypt_core_sidm_3way(uint32_t *X /*, uint32_t *V*/)
  		_calc_x1 = _mm_add_epi32(X1[0], X1[3]);     //X[0] and X[3]
  		_calc_x2 = _mm_add_epi32(X2[0], X2[3]);     //X[0] and X[3]
  		_calc_x3 = _mm_add_epi32(X3[0], X3[3]);     //X[0] and X[3]
+		_calc_x4 = _mm_add_epi32(X4[0], X4[3]);     //X[0] and X[3]
 		_shift_left = _mm_slli_epi32(_calc_x1, 7);
 		X1[1] ^= _shift_left;
 		_shift_left = _mm_slli_epi32(_calc_x2, 7);
 		X2[1] ^= _shift_left;
 		_shift_left = _mm_slli_epi32(_calc_x3, 7);
 		X3[1] ^= _shift_left;
+		_shift_left = _mm_slli_epi32(_calc_x4, 7);
+		X4[1] ^= _shift_left;
 		_calc_x1 = _mm_srli_epi32(_calc_x1,(32 - 7));
 		_calc_x2 = _mm_srli_epi32(_calc_x2,(32 - 7));
 		_calc_x3 = _mm_srli_epi32(_calc_x3,(32 - 7));
+		_calc_x4 = _mm_srli_epi32(_calc_x4,(32 - 7));
 		X1[1] ^= _calc_x1;
 		X2[1] ^= _calc_x2;
 		X3[1] ^= _calc_x3;
+		X4[1] ^= _calc_x4;
 
 		/* second column X[2]=f(X1,X0) */
  		_calc_x1 = _mm_add_epi32(X1[1], X1[0]);     //X[1] and X[0]
  		_calc_x2 = _mm_add_epi32(X2[1], X2[0]);     //X[1] and X[0]
  		_calc_x3 = _mm_add_epi32(X3[1], X3[0]);     //X[1] and X[0]
+		_calc_x4 = _mm_add_epi32(X4[1], X4[0]);     //X[1] and X[0]
 		_shift_left = _mm_slli_epi32(_calc_x1, 9);
 		X1[2] ^= _shift_left;
 		_shift_left = _mm_slli_epi32(_calc_x2, 9);
 		X2[2] ^= _shift_left;
 		_shift_left = _mm_slli_epi32(_calc_x3, 9);
 		X3[2] ^= _shift_left;
+		_shift_left = _mm_slli_epi32(_calc_x4, 9);
+		X4[2] ^= _shift_left;
 		_calc_x1 = _mm_srli_epi32(_calc_x1,(32 - 9));
 		_calc_x2 = _mm_srli_epi32(_calc_x2,(32 - 9));
 		_calc_x3 = _mm_srli_epi32(_calc_x3,(32 - 9));
+		_calc_x4 = _mm_srli_epi32(_calc_x4,(32 - 9));
 		X1[2] ^= _calc_x1;
 		X2[2] ^= _calc_x2;
 		X3[2] ^= _calc_x3;
+		X4[2] ^= _calc_x4;
 
 		/* third column  X[3]=f(X2,X1) */
  		_calc_x1 = _mm_add_epi32(X1[2], X1[1]);     //X[2] and X[1]
  		_calc_x2 = _mm_add_epi32(X2[2], X2[1]);     //X[2] and X[1]
  		_calc_x3 = _mm_add_epi32(X3[2], X3[1]);     //X[2] and X[1]
+ 		_calc_x4 = _mm_add_epi32(X4[2], X4[1]);     //X[2] and X[1]
 		_shift_left = _mm_slli_epi32(_calc_x1, 13);
 		X1[3] ^= _shift_left;
 		_shift_left = _mm_slli_epi32(_calc_x2, 13);
 		X2[3] ^= _shift_left;
 		_shift_left = _mm_slli_epi32(_calc_x3, 13);
 		X3[3] ^= _shift_left;
+		_shift_left = _mm_slli_epi32(_calc_x4, 13);
+		X4[3] ^= _shift_left;
 		_calc_x1 = _mm_srli_epi32(_calc_x1,(32 - 13));
 		_calc_x2 = _mm_srli_epi32(_calc_x2,(32 - 13));
 		_calc_x3 = _mm_srli_epi32(_calc_x3,(32 - 13));
+		_calc_x4 = _mm_srli_epi32(_calc_x4,(32 - 13));
 		X1[3] ^= _calc_x1;
 		X2[3] ^= _calc_x2;
 		X3[3] ^= _calc_x3;
+		X4[3] ^= _calc_x4;
 
 		/* fourth column  X[0]=f(X3,X2) */
  		_calc_x1 = _mm_add_epi32(X1[3], X1[2]);     //X[3] and X[2]
  		_calc_x2 = _mm_add_epi32(X2[3], X2[2]);     //X[3] and X[2]
  		_calc_x3 = _mm_add_epi32(X3[3], X3[2]);     //X[3] and X[2]
+ 		_calc_x4 = _mm_add_epi32(X4[3], X4[2]);     //X[3] and X[2]
 		_shift_left = _mm_slli_epi32(_calc_x1, 18);
 		X1[0] ^= _shift_left;
 		_shift_left = _mm_slli_epi32(_calc_x2, 18);
 		X2[0] ^= _shift_left;
 		_shift_left = _mm_slli_epi32(_calc_x3, 18);
 		X3[0] ^= _shift_left;
+		_shift_left = _mm_slli_epi32(_calc_x4, 18);
+		X4[0] ^= _shift_left;
 		_calc_x1 = _mm_srli_epi32(_calc_x1,(32 - 18));
 		_calc_x2 = _mm_srli_epi32(_calc_x2,(32 - 18));
 		_calc_x3 = _mm_srli_epi32(_calc_x3,(32 - 18));
+		_calc_x4 = _mm_srli_epi32(_calc_x4,(32 - 18));
 		X1[0] ^= _calc_x1;		//X[0]
 		X2[0] ^= _calc_x2;		//X[0]
 		X3[0] ^= _calc_x3;		//X[0]
+		X4[0] ^= _calc_x4;		//X[0]
 
 	// transpose_matrix(row1, row2, row3, row4, row_to_column);
 		X1[3] = _mm_shuffle_epi32(X1[3],0x39);    //x[3]
 		X2[3] = _mm_shuffle_epi32(X2[3],0x39);    //x[3]
 		X3[3] = _mm_shuffle_epi32(X3[3],0x39);    //x[3]
+		X4[3] = _mm_shuffle_epi32(X4[3],0x39);    //x[3]
 		X1[2] = _mm_shuffle_epi32(X1[2],0x4e);    //x[2]
 		X2[2] = _mm_shuffle_epi32(X2[2],0x4e);    //x[2]
 		X3[2] = _mm_shuffle_epi32(X3[2],0x4e);    //x[2]
+		X4[2] = _mm_shuffle_epi32(X4[2],0x4e);    //x[2]
 		X1[1] = _mm_shuffle_epi32(X1[1],0x93);    //x[1]
 		X2[1] = _mm_shuffle_epi32(X2[1],0x93);    //x[1]
 		X3[1] = _mm_shuffle_epi32(X3[1],0x93);    //x[1]
+		X4[1] = _mm_shuffle_epi32(X4[1],0x93);    //x[1]
 
 	// end transpose
 	}
 
-	for(i=0;i<4;i++){
-		calc_11[i] = _mm_add_epi32(calc_11[i], X1[i]);
-		calc_21[i] = _mm_add_epi32(calc_21[i], X2[i]);
-		calc_31[i] = _mm_add_epi32(calc_31[i], X3[i]);
-	}
+	calc_11[0] = _mm_add_epi32(calc_11[0], X1[0]);
+	calc_11[1] = _mm_add_epi32(calc_11[1], X1[1]);
+	calc_11[2] = _mm_add_epi32(calc_11[2], X1[2]);
+	calc_11[3] = _mm_add_epi32(calc_11[3], X1[3]);
+
+	calc_21[0] = _mm_add_epi32(calc_21[0], X2[0]);
+	calc_21[1] = _mm_add_epi32(calc_21[1], X2[1]);
+	calc_21[2] = _mm_add_epi32(calc_21[2], X2[2]);
+	calc_21[3] = _mm_add_epi32(calc_21[3], X2[3]);
+
+	calc_31[0] = _mm_add_epi32(calc_31[0], X3[0]);
+	calc_31[1] = _mm_add_epi32(calc_31[1], X3[1]);
+	calc_31[2] = _mm_add_epi32(calc_31[2], X3[2]);
+	calc_31[3] = _mm_add_epi32(calc_31[3], X3[3]);
+
+	calc_41[0] = _mm_add_epi32(calc_41[0], X4[0]);
+	calc_41[1] = _mm_add_epi32(calc_41[1], X4[1]);
+	calc_41[2] = _mm_add_epi32(calc_41[2], X4[2]);
+	calc_41[3] = _mm_add_epi32(calc_41[3], X4[3]);
 
 }
 
 
-static inline void scrypt_core_sidm_3way(uint32_t *X /*, uint32_t *V*/)
+static inline void scrypt_core_sidm_4way(uint32_t *X /*, uint32_t *V*/)
 {
 	uint32_t i, j;
 
-	__m128i scratch[1024 * 8 * 3];
+	__m128i scratch[1024 * 8 * 4];
 	__m128i *SourcePtr = (__m128i*) X;
 	uint32_t X11[16] __attribute__((aligned(16)));
 	uint32_t X12[16] __attribute__((aligned(16)));
@@ -974,13 +1048,17 @@ static inline void scrypt_core_sidm_3way(uint32_t *X /*, uint32_t *V*/)
 	uint32_t X22[16] __attribute__((aligned(16)));
 	uint32_t X31[16] __attribute__((aligned(16)));
 	uint32_t X32[16] __attribute__((aligned(16)));
+	uint32_t X41[16] __attribute__((aligned(16)));
+	uint32_t X42[16] __attribute__((aligned(16)));
 
 	__m128i *calc_11 = (__m128i*) X11;
 	__m128i *calc_21 = (__m128i*) X21;
 	__m128i *calc_31 = (__m128i*) X31;
+	__m128i *calc_41 = (__m128i*) X41;
 	__m128i *calc_12 = (__m128i*) X12;
 	__m128i *calc_22 = (__m128i*) X22;
 	__m128i *calc_32 = (__m128i*) X32;
+	__m128i *calc_42 = (__m128i*) X42;
 
 	__m128i _calc5;
 	__m128i _calc6;
@@ -1054,14 +1132,35 @@ static inline void scrypt_core_sidm_3way(uint32_t *X /*, uint32_t *V*/)
 	calc_32[2] = _mm_blend_epi16(_calc7, _calc6, 0xcc);
 	calc_32[3] = _mm_blend_epi16(_calc8, _calc7, 0xcc);
 
+	/* transpose the data from *X4x */
+	_calc5 =_mm_blend_epi16(SourcePtr[24], SourcePtr[26], 0xf0);
+	_calc6 =_mm_blend_epi16(SourcePtr[25], SourcePtr[27], 0x0f);
+	_calc7 =_mm_blend_epi16(SourcePtr[26], SourcePtr[24], 0xf0);
+	_calc8 =_mm_blend_epi16(SourcePtr[27], SourcePtr[25], 0x0f);
+	calc_41[0] = _mm_blend_epi16(_calc5, _calc8, 0xcc);
+	calc_41[1] = _mm_blend_epi16(_calc6, _calc5, 0xcc);
+	calc_41[2] = _mm_blend_epi16(_calc7, _calc6, 0xcc);
+	calc_41[3] = _mm_blend_epi16(_calc8, _calc7, 0xcc);
+
+	_calc5 =_mm_blend_epi16(SourcePtr[28], SourcePtr[30], 0xf0);
+	_calc6 =_mm_blend_epi16(SourcePtr[29], SourcePtr[31], 0x0f);
+	_calc7 =_mm_blend_epi16(SourcePtr[30], SourcePtr[28], 0xf0);
+	_calc8 =_mm_blend_epi16(SourcePtr[31], SourcePtr[29], 0x0f);
+	calc_42[0] = _mm_blend_epi16(_calc5, _calc8, 0xcc);
+	calc_42[1] = _mm_blend_epi16(_calc6, _calc5, 0xcc);
+	calc_42[2] = _mm_blend_epi16(_calc7, _calc6, 0xcc);
+	calc_42[3] = _mm_blend_epi16(_calc8, _calc7, 0xcc);
+
 	for (i = 0; i < 1024; i++) {
 		for (j=0; j<4; j++){
-			scratch[i * 24 +  0 + j] = calc_11[j];
-			scratch[i * 24 +  4 + j] = calc_12[j];
-			scratch[i * 24 +  8 + j] = calc_21[j];
-			scratch[i * 24 + 12 + j] = calc_22[j];
-			scratch[i * 24 + 16 + j] = calc_31[j];
-			scratch[i * 24 + 20 + j] = calc_32[j];
+			scratch[i * 32 +  0 + j] = calc_11[j];
+			scratch[i * 32 +  4 + j] = calc_12[j];
+			scratch[i * 32 +  8 + j] = calc_21[j];
+			scratch[i * 32 + 12 + j] = calc_22[j];
+			scratch[i * 32 + 16 + j] = calc_31[j];
+			scratch[i * 32 + 20 + j] = calc_32[j];
+			scratch[i * 32 + 24 + j] = calc_41[j];
+			scratch[i * 32 + 28 + j] = calc_42[j];
 		}
 		calc_11[0] ^= calc_12[0];
 		calc_11[1] ^= calc_12[1];
@@ -1078,7 +1177,12 @@ static inline void scrypt_core_sidm_3way(uint32_t *X /*, uint32_t *V*/)
 		calc_31[2] ^= calc_32[2];
 		calc_31[3] ^= calc_32[3];
 
-		xor_salsa_sidm_3way(calc_11, calc_21, calc_31);
+		calc_41[0] ^= calc_42[0];
+		calc_41[1] ^= calc_42[1];
+		calc_41[2] ^= calc_42[2];
+		calc_41[3] ^= calc_42[3];
+
+		xor_salsa_sidm_4way(calc_11, calc_21, calc_31, calc_41);
 
 		calc_12[0] ^= calc_11[0];
 		calc_12[1] ^= calc_11[1];
@@ -1095,10 +1199,15 @@ static inline void scrypt_core_sidm_3way(uint32_t *X /*, uint32_t *V*/)
 		calc_32[2] ^= calc_31[2];
 		calc_32[3] ^= calc_31[3];
 
-		xor_salsa_sidm_3way(calc_12, calc_22, calc_32);
+		calc_42[0] ^= calc_41[0];
+		calc_42[1] ^= calc_41[1];
+		calc_42[2] ^= calc_41[2];
+		calc_42[3] ^= calc_41[3];
+
+		xor_salsa_sidm_4way(calc_12, calc_22, calc_32, calc_42);
 	}
 	for (i = 0; i < 1024; i++) {
-		j = 24 * (_mm_extract_epi16(calc_12[0],0x00) & 1023);
+		j = 32 * (_mm_extract_epi16(calc_12[0],0x00) & 1023);
 
 		calc_11[0] ^=  scratchPrt1[j];
 		calc_11[1] ^=  scratchPrt2[j];
@@ -1109,7 +1218,7 @@ static inline void scrypt_core_sidm_3way(uint32_t *X /*, uint32_t *V*/)
 		calc_12[2] ^=  scratchPrt7[j];
 		calc_12[3] ^=  scratchPrt8[j];
 
-		j = 8 + 24 * (_mm_extract_epi16(calc_22[0],0x00) & 1023);
+		j = 8 + 32 * (_mm_extract_epi16(calc_22[0],0x00) & 1023);
 
 		calc_21[0] ^=  scratchPrt1[j];
 		calc_21[1] ^=  scratchPrt2[j];
@@ -1120,7 +1229,7 @@ static inline void scrypt_core_sidm_3way(uint32_t *X /*, uint32_t *V*/)
 		calc_22[2] ^=  scratchPrt7[j];
 		calc_22[3] ^=  scratchPrt8[j];
 
-		j = 16 + 24 * (_mm_extract_epi16(calc_32[0],0x00) & 1023);
+		j = 16 + 32 * (_mm_extract_epi16(calc_32[0],0x00) & 1023);
 
 		calc_31[0] ^=  scratchPrt1[j];
 		calc_31[1] ^=  scratchPrt2[j];
@@ -1130,6 +1239,17 @@ static inline void scrypt_core_sidm_3way(uint32_t *X /*, uint32_t *V*/)
 		calc_32[1] ^=  scratchPrt6[j];
 		calc_32[2] ^=  scratchPrt7[j];
 		calc_32[3] ^=  scratchPrt8[j];
+
+		j = 24 + 32 * (_mm_extract_epi16(calc_42[0],0x00) & 1023);
+
+		calc_41[0] ^=  scratchPrt1[j];
+		calc_41[1] ^=  scratchPrt2[j];
+		calc_41[2] ^=  scratchPrt3[j];
+		calc_41[3] ^=  scratchPrt4[j];
+		calc_42[0] ^=  scratchPrt5[j];
+		calc_42[1] ^=  scratchPrt6[j];
+		calc_42[2] ^=  scratchPrt7[j];
+		calc_42[3] ^=  scratchPrt8[j];
 
 		calc_11[0] ^= calc_12[0];
 		calc_11[1] ^= calc_12[1];
@@ -1146,7 +1266,12 @@ static inline void scrypt_core_sidm_3way(uint32_t *X /*, uint32_t *V*/)
 		calc_31[2] ^= calc_32[2];
 		calc_31[3] ^= calc_32[3];
 
-		xor_salsa_sidm_3way(calc_11, calc_21, calc_31);
+		calc_41[0] ^= calc_42[0];
+		calc_41[1] ^= calc_42[1];
+		calc_41[2] ^= calc_42[2];
+		calc_41[3] ^= calc_42[3];
+
+		xor_salsa_sidm_4way(calc_11, calc_21, calc_31, calc_41);
 
 		calc_12[0] ^= calc_11[0];
 		calc_12[1] ^= calc_11[1];
@@ -1163,7 +1288,12 @@ static inline void scrypt_core_sidm_3way(uint32_t *X /*, uint32_t *V*/)
 		calc_32[2] ^= calc_31[2];
 		calc_32[3] ^= calc_31[3];
 
-		xor_salsa_sidm_3way(calc_12, calc_22, calc_32);
+		calc_42[0] ^= calc_41[0];
+		calc_42[1] ^= calc_41[1];
+		calc_42[2] ^= calc_41[2];
+		calc_42[3] ^= calc_41[3];
+
+		xor_salsa_sidm_4way(calc_12, calc_22, calc_32, calc_42);
 	}
 // return the valueś to X
 	_calc5 =_mm_blend_epi16(calc_11[0], calc_11[2], 0xf0);
@@ -1219,6 +1349,26 @@ static inline void scrypt_core_sidm_3way(uint32_t *X /*, uint32_t *V*/)
 	SourcePtr[21] = _mm_blend_epi16(_calc6, _calc5, 0xcc);
 	SourcePtr[22] = _mm_blend_epi16(_calc7, _calc6, 0xcc);
 	SourcePtr[23] = _mm_blend_epi16(_calc8, _calc7, 0xcc);
+
+	_calc5 =_mm_blend_epi16(calc_41[0], calc_41[2], 0xf0);
+	_calc6 =_mm_blend_epi16(calc_41[1], calc_41[3], 0x0f);
+	_calc7 =_mm_blend_epi16(calc_41[2], calc_41[0], 0xf0);
+	_calc8 =_mm_blend_epi16(calc_41[3], calc_41[1], 0x0f);
+	SourcePtr[24] = _mm_blend_epi16(_calc5, _calc8, 0xcc);
+	SourcePtr[25] = _mm_blend_epi16(_calc6, _calc5, 0xcc);
+	SourcePtr[26] = _mm_blend_epi16(_calc7, _calc6, 0xcc);
+	SourcePtr[27] = _mm_blend_epi16(_calc8, _calc7, 0xcc);
+
+	_calc5 =_mm_blend_epi16(calc_42[0], calc_42[2], 0xf0);
+	_calc6 =_mm_blend_epi16(calc_42[1], calc_42[3], 0x0f);
+	_calc7 =_mm_blend_epi16(calc_42[2], calc_42[0], 0xf0);
+	_calc8 =_mm_blend_epi16(calc_42[3], calc_42[1], 0x0f);
+	SourcePtr[28] = _mm_blend_epi16(_calc5, _calc8, 0xcc);
+	SourcePtr[29] = _mm_blend_epi16(_calc6, _calc5, 0xcc);
+	SourcePtr[30] = _mm_blend_epi16(_calc7, _calc6, 0xcc);
+	SourcePtr[31] = _mm_blend_epi16(_calc8, _calc7, 0xcc);
+
+
 }
 
 
