@@ -1733,17 +1733,17 @@ static inline void scrypt_core_sidm_2way(uint32_t *X /*, uint32_t *V*/)
 //#define S0(x)           (ROTR(x, 2) ^ ROTR(x, 13) ^ ROTR(x, 22))
 __m128i funct_S0(const __m128i *x)
 {
-        __m128i rot2 = _mm_slli_epi32(*x, 2);
-        __m128i _calc = _mm_srli_epi32(*x,(32 - 2));
+        __m128i rot2 = _mm_srli_epi32(*x, 2);
+        __m128i _calc = _mm_slli_epi32(*x,(32 - 2));
 
-        __m128i rot13 = _mm_slli_epi32(*x, 13);
+        __m128i rot13 = _mm_srli_epi32(*x, 13);
         rot13 = _mm_xor_si128(rot13, _calc);
-        _calc = _mm_srli_epi32(*x,(32 - 13));
+        _calc = _mm_slli_epi32(*x,(32 - 13));
 
-        __m128i rot22 = _mm_slli_epi32(*x, 22);
+        __m128i rot22 = _mm_srli_epi32(*x, 22);
         rot22 = _mm_xor_si128(rot22, _calc);
 
-        _calc = _mm_srli_epi32(*x,(32 - 22));
+        _calc = _mm_slli_epi32(*x,(32 - 22));
         _calc = _mm_xor_si128(rot22, _calc);
         _calc = _mm_xor_si128(_calc, rot2);
         _calc = _mm_xor_si128(_calc, rot13);
@@ -1754,17 +1754,17 @@ __m128i funct_S0(const __m128i *x)
 //#define S1(x)           (ROTR(x, 6) ^ ROTR(x, 11) ^ ROTR(x, 25))
 __m128i funct_S1(const __m128i *x)
 {
-        __m128i rot6 = _mm_slli_epi32(*x, 6);
-        __m128i _calc = _mm_srli_epi32(*x,(32 - 6));
+        __m128i rot6 = _mm_srli_epi32(*x, 6);
+        __m128i _calc = _mm_slli_epi32(*x,(32 - 6));
 
-        __m128i rot11 = _mm_slli_epi32(*x, 11);
+        __m128i rot11 = _mm_srli_epi32(*x, 11);
         rot11 = _mm_xor_si128(rot11, _calc);
-        _calc = _mm_srli_epi32(*x,(32 - 11));
+        _calc = _mm_slli_epi32(*x,(32 - 11));
 
-        __m128i rot25 = _mm_slli_epi32(*x, 25);
+        __m128i rot25 = _mm_srli_epi32(*x, 25);
         rot25 = _mm_xor_si128(rot25, _calc);
 
-        _calc = _mm_srli_epi32(*x,(32 - 25));
+        _calc = _mm_slli_epi32(*x,(32 - 25));
         _calc = _mm_xor_si128(rot25, _calc);
         _calc = _mm_xor_si128(_calc, rot6);
         _calc = _mm_xor_si128(_calc, rot11);
@@ -1773,39 +1773,39 @@ __m128i funct_S1(const __m128i *x)
 }
 
 //#define s0(x)           (ROTR(x, 7) ^ ROTR(x, 18) ^ (x >> 3))
-__m128i funct_s0(const __m128i *x)
+__m128i funct_s0(const __m128i x)
 {
-        __m128i rot7 = _mm_slli_epi32(*x, 7);
-        __m128i _calc = _mm_srli_epi32(*x,(32 - 7));
-
-        __m128i rot18 = _mm_slli_epi32(*x, 18);
-        rot18 = _mm_xor_si128(rot18, _calc);
-        _calc = _mm_srli_epi32(*x,(32 - 18));
-
-        __m128i shift3 = _mm_srli_epi32(*x, 3);
-        _calc = _mm_xor_si128(shift3, _calc);
+        __m128i rot7 = _mm_srli_epi32(x, 7);
+        __m128i rot18 = _mm_srli_epi32(x, 18);
+        __m128i _calc = _mm_slli_epi32(x,(32 - 7));
+        __m128i shift3 = _mm_srli_epi32(x, 3);
 
         _calc = _mm_xor_si128(_calc, rot7);
         _calc = _mm_xor_si128(_calc, rot18);
+
+        rot18 = _mm_slli_epi32(x,(32 - 18));
+        _calc = _mm_xor_si128(_calc, rot18);
+
+        _calc = _mm_xor_si128(_calc, shift3);
 
         return _calc;
 }
 
 //#define s1(x)           (ROTR(x, 17) ^ ROTR(x, 19) ^ (x >> 10))
-__m128i funct_s1(const __m128i *x)
+__m128i funct_s1(const __m128i x)
 {
-        __m128i rot17 = _mm_slli_epi32(*x, 17);
-        __m128i _calc = _mm_srli_epi32(*x,(32 - 17));
-
-        __m128i rot19 = _mm_slli_epi32(*x, 19);
-        rot19 = _mm_xor_si128(rot19, _calc);
-        _calc = _mm_srli_epi32(*x,(32 - 19));
-
-        __m128i shift10 = _mm_srli_epi32(*x, 10);
-        _calc = _mm_xor_si128(shift10, _calc);
+        __m128i rot17 = _mm_srli_epi32(x, 17);
+        __m128i rot19 = _mm_srli_epi32(x, 19);
+        __m128i _calc = _mm_slli_epi32(x,(32 - 17));
+        __m128i shift10 = _mm_srli_epi32(x, 10);
 
         _calc = _mm_xor_si128(_calc, rot17);
         _calc = _mm_xor_si128(_calc, rot19);
+
+        rot19 =  _mm_slli_epi32(x,(32 - 19));
+        _calc = _mm_xor_si128(_calc, rot19);
+
+        _calc = _mm_xor_si128(_calc, shift10);
 
         return _calc;
 }
